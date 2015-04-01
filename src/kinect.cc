@@ -1,22 +1,10 @@
-#ifndef BUILDING_NODE_EXTENSION
-#define BUILDING_NODE_EXTENSION
-#endif // BUILDING_NODE_EXTENSION
+#include <node.h>
+#include <node_buffer.h>
 
-#include <v8.h>
-#include "node.h"
-#include "node_buffer.h"
-#include "uv.h"
-
-extern "C" {
-  #include <libfreenect/libfreenect.h>
-}
-
-#include <stdio.h>
-#include <stdexcept>
-#include <string>
-#include <iostream>
+#include <libfreenect.hpp>
 
 #include "kinect.h"
+
 
 using namespace node;
 using namespace v8;
