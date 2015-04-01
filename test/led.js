@@ -12,30 +12,30 @@ describe("LED", function() {
     context.close();
   });
 
-  var names = [
-    'green',
-    'red',
-    'yellow',
-    'blink green',
-    'blink red yellow',
-    'off'
+  var option_tests = [
+    {name: 'green'                , option: Kinect.LED_GREEN           },
+    {name: 'red'                  , option: Kinect.LED_RED             },
+    {name: 'yello'                , option: Kinect.LED_YELLOW          },
+    {name: 'blink green'          , option: Kinect.LED_BLINK_GREEN     },
+    {name: 'blink red then yellow', option: Kinect.LED_BLINK_RED_YELLOW},
+    {name: 'off'                  , option: Kinect.LED_OFF             }
   ]
 
-  names.forEach(function (name) {
-    it("sets the state of Kinect's LED to " + name, function(done) {
-      this.timeout(2500);
-      context.setLedOption(name);
-      setTimeout(done, 2000);
+  option_tests.forEach(function (test) {
+    it("sets the state of Kinect's LED to " + test.name, function (done) {
+      this.timeout(1500);
+      context.setLedOption(test.option);;
+      setTimeout(done, 1000);
     });
   });
 
-  it("throws an error when no arguments as passed", function() {
+  it("throws an error when no arguments as passed", function () {
     assert.throws(function() {
       context.led();
     });
   });
 
-  it("throws an error when the LED option name is invalid", function() {
+  it("throws an error when the LED option name is invalid", function () {
     assert.throws(function() {
       context.led('pink');
     });

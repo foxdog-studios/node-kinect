@@ -301,45 +301,14 @@ namespace kinect {
 
     void Context::SetLEDOption(Arguments const &args)
     {
-        if (args.Length() != 1 || !args[0]->IsString())
+        if (args.Length() != 1 || !args[0]->IsNumber())
         {
-            throw_message("LED state name argument must be a string");
+            throw_message("Expected 1 number");
             return;
         }
 
-        std::string name = *String::AsciiValue(args[0]->ToString());
-
-        freenect_led_options option;
-
-        if (name == "off")
-        {
-            option = LED_OFF;
-        }
-        else if (name == "green")
-        {
-            option = LED_GREEN;
-        }
-        else if (name == "red")
-        {
-            option = LED_RED;
-        }
-        else if (name == "yellow")
-        {
-            option = LED_YELLOW;
-        }
-        else if (name == "blink green")
-        {
-            option = LED_BLINK_GREEN;
-        }
-        else if (name == "blink red yellow")
-        {
-            option = LED_BLINK_RED_YELLOW;
-        }
-        else
-        {
-            throw_message("Invalid LED option name");
-            return;
-        }
+        auto const option = static_cast<freenect_led_options>(
+                args[0]->ToNumber()->NumberValue());
 
         if (freenect_set_led(device_, option) != 0)
         {
