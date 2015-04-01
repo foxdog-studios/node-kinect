@@ -139,40 +139,36 @@ namespace kinect {
 
     // = Callback ==========================================================
 
-    Handle<Value> Context::SetVideoCallback(Arguments const& args)
+    Handle<Value> Context::CallSetVideoCallback(Arguments const& args)
     {
         HandleScope scope;
-        GetContext(args)->ConfigureVideo(args);
+        GetContext(args)->SetVideoCallback(args);
         return scope.Close(Undefined());
     }
 
-    Handle<Value> Context::ConfigureVideo(Arguments const &args)
+    void Context::SetVideoCallback(Arguments const &args)
     {
-        HandleScope scope;
-
-        if (args.Length() == 0)
+        if (args.Length() != 1 || !args[0]->IsFunction())
         {
-            video_callback_.Dispose();
-            video_callback_.Clear();
-            return scope.Close(Undefined());
-        }
-
-        if (args.Length() != 1)
-        {
-            throw_message("Wrong number of arguments, expects at most 1");
-            return scope.Close(Undefined());
-        }
-
-        if (!args[0]->IsFunction())
-        {
-            throw_message("Argument must be a function");
-            return scope.Close(Undefined());
+            throw_message("Expected 1 function as arguments");
+            return;
         }
 
         video_callback_ = Persistent<Function>::New(
                 Local<Function>::Cast(args[0]));
+    }
 
+    Handle<Value> Context::CallUnsetVideoCallback(Arguments const& args)
+    {
+        HandleScope scope;
+        GetContext(args)->UnsetVideoCallback();
         return scope.Close(Undefined());
+    }
+
+    void Context::UnsetVideoCallback()
+    {
+        video_callback_.Dispose();
+        video_callback_.Clear();
     }
 
     void Context::VideoCallback()
@@ -496,7 +492,9 @@ namespace kinect {
         NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth",       StartDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth",        StopDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback", CallSetDepthCallback);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "setVideoCallback", SetVideoCallback);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setVideoCallback", CallSetVideoCallback);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "unsetVideoCallback",
+                CallUnsetVideoCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "startVideo",       StartVideo);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopVideo",        StopVideo);
         NODE_SET_PROTOTYPE_METHOD(tpl, "tilt",             Tilt);

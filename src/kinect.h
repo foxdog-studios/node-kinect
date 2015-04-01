@@ -52,13 +52,22 @@ namespace kinect {
       // = Video ===============================================================
 
       static v8::Handle<v8::Value> StartVideo(v8::Arguments const &args);
+
       void StartVideo();
 
       static v8::Handle<v8::Value> StopVideo(v8::Arguments const &args);
+
       void StopVideo();
 
-      static v8::Handle<v8::Value> SetVideoCallback(v8::Arguments const &args);
-      v8::Handle<v8::Value> ConfigureVideo(v8::Arguments const &args);
+      static v8::Handle<v8::Value> CallSetVideoCallback(
+              v8::Arguments const &args);
+
+      void SetVideoCallback(v8::Arguments const &args);
+
+      static v8::Handle<v8::Value> CallUnsetVideoCallback(
+              v8::Arguments const &args);
+
+      void UnsetVideoCallback();
 
       void                          Pause            ();
       static v8::Handle<v8::Value>  Pause            (const v8::Arguments &args);
