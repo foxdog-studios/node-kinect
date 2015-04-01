@@ -32,31 +32,36 @@ namespace kinect
 {
     Handle<Value> Context::New(Arguments const &args)
     {
-        HandleScope scope;
-
         assert(args.IsConstructCall());
 
-        int user_device_number = 0;
+        HandleScope scope;
 
-        if (args.Length() == 1)
+        int user_device_number;
+        int const argc = args.Length();
+
+        if (argc == 0)
         {
-            if (!args[0]->IsNumber())
+            user_device_number = 0;
+        }
+        else if (argc == 1)
+        {
+            if (!args[0]->IsInt32())
             {
-                return ThrowException(Exception::TypeError(
-                            String::New("user_device_number must be an integer")));
+                throw_message("userDeviceNumber must be an integer");
+                return scope.Close(Undefined());
             }
-            user_device_number = (int) args[0]->ToInteger()->Value();
-            if (user_device_number < 0)
-            {
-                return ThrowException(Exception::RangeError(
-                            String::New("user_device_number must be a natural number")));
-            }
+
+            user_device_number = args[0]->ToInt32()->Value();
+        }
+        else
+        {
+            throw_message("Excepted 1 argument");
+            return scope.Close(Undefined());
         }
 
-        Context *context = new Context(user_device_number);
+        Context *const context = new Context(user_device_number);
         context->Wrap(args.This());
-
-        return args.This();
+        return scope.Close(args.This());
     }
 
     Context::Context(int user_device_number) : ObjectWrap()
@@ -424,14 +429,14 @@ namespace kinect
 
     void Context::SetLEDOption(Arguments const &args)
     {
-        if (args.Length() != 1 || !args[0]->IsNumber())
+        if (args.Length() != 1 || !args[0]->IsInt32())
         {
             throw_message("Expected 1 number");
             return;
         }
 
         auto const option = static_cast<freenect_led_options>(
-                args[0]->ToNumber()->NumberValue());
+                args[0]->ToInt32()->NumberValue());
 
         if (freenect_set_led(device_, option) != 0)
         {
@@ -456,10 +461,10 @@ namespace kinect
     {
         if (args.Length() != 1 || !args[0]->IsNumber())
         {
-            throw_message("Expected 1 number");
+            throw_message("Expected 1 integer");
         }
 
-        freenect_set_tilt_degs(device_, args[0]->ToNumber()->NumberValue());
+        freenect_set_tilt_degs(device_, args[0]->ToInteger()->NumberValue());
     }
 
 
