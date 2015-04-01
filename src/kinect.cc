@@ -486,6 +486,13 @@ namespace kinect {
     {
         HandleScope scope;
 
+        NODE_DEFINE_CONSTANT(target, LED_OFF);
+        NODE_DEFINE_CONSTANT(target, LED_GREEN);
+        NODE_DEFINE_CONSTANT(target, LED_RED);
+        NODE_DEFINE_CONSTANT(target, LED_YELLOW);
+        NODE_DEFINE_CONSTANT(target, LED_BLINK_GREEN);
+        NODE_DEFINE_CONSTANT(target, LED_BLINK_RED_YELLOW);
+
         Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
         tpl->InstanceTemplate()->SetInternalFieldCount(1);
 

@@ -5,7 +5,7 @@ describe("Tilt", function () {
   var context;
 
   beforeEach(function () {
-    context = Kinect();
+    context = new Kinect.Context(0);
   });
 
   afterEach(function () {
