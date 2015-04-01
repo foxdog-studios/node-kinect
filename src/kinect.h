@@ -88,8 +88,6 @@ namespace kinect {
       void                          Resume           ();
       static v8::Handle<v8::Value>  Resume           (const v8::Arguments &args);
 
-      void                          InitProcessEventThread();
-
       bool                  depthCallback_;
       bool                  videoCallback_;
 

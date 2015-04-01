@@ -133,18 +133,12 @@ namespace kinect
 
     void Context::Resume()
     {
-        if (! running_)
+        if (!running_)
         {
             running_ = true;
-            InitProcessEventThread();
+            uv_thread_create(&event_thread_, process_event_thread, this);
         }
     }
-
-    void Context::InitProcessEventThread()
-    {
-        uv_thread_create(&event_thread_, process_event_thread, this);
-    }
-
 
     Handle<Value> Context::Pause(Arguments const &args)
     {
@@ -165,7 +159,7 @@ namespace kinect
     {
         HandleScope scope;
         GetContext(args)->Close();
-        return Undefined();
+        return scope.Close(Undefined());
     }
 
     void Context::Close()
