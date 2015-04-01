@@ -172,24 +172,34 @@ namespace kinect
     {
         running_ = false;
 
-        if (device_ != NULL)
+        std::string error_message;
+
+        if (device_ != nullptr)
         {
-            if (freenect_close_device(device_) < 0)
+
+            if (freenect_close_device(device_) != 0)
             {
-                ThrowException(Exception::Error(String::New(("Error closing device"))));
-                return;
+                error_message += "Could not close device";
             }
-            device_ = NULL;
+            device_ = nullptr;
         }
 
-        if (context_ != NULL)
+        if (context_ != nullptr)
         {
-            if (freenect_shutdown(context_) < 0)
+            if (freenect_shutdown(context_) != 0)
             {
-                ThrowException(Exception::Error(String::New(("Error shutting down"))));
-                return;
+                if (error_message.length() > 0)
+                {
+                    error_message += ". ";
+                }
+                error_message += "Could not shutdown context";
             }
-            context_ = NULL;
+            context_ = nullptr;
+        }
+
+        if (error_message.length() > 0)
+        {
+            throw_message(error_message.c_str());
         }
     }
 
