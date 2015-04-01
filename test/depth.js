@@ -13,24 +13,29 @@ describe("Depth", function() {
     context.close();
   });
 
-  it("should allow to pass in a depth callback", function(done) {
+  it("should pass depth frames to the callback", function(done) {
     this.timeout(60000);
     context.setDepthCallback(handleDepth);
     context.startDepth();
     context.resume();
-    var missingFrames = 1000;
+
+    var remaining = 1000;
 
     function handleDepth(buf) {
-      if (-- missingFrames == 0) {
-        context.removeListener('depth', handleDepth);
-      }
-      if (! (missingFrames % 10))
+      remaining--;
+
+      if (! (remaining % 10)) {
         process.stdout.write('.');
+      }
+
       assert(buf instanceof Buffer, 'buf is not an instance of Buffer');
       assert(buf.length > 0, 'Buffer length is zero');
       assert.equal(buf.length, 640 * 480 * 2, 'Buffer length is ' + buf.length);
 
-      if (missingFrames == 0) done();
+      if (remaining == 0) {
+        done();
+      }
     }
   });
 });
+
