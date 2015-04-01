@@ -459,12 +459,16 @@ namespace kinect
 
     void Context::Tilt(Arguments const &args)
     {
-        if (args.Length() != 1 || !args[0]->IsNumber())
+        if (args.Length() != 1 || !args[0]->IsInt32())
         {
             throw_message("Expected 1 integer");
+            return;
         }
 
-        freenect_set_tilt_degs(device_, args[0]->ToInteger()->NumberValue());
+        if (freenect_set_tilt_degs(device_, args[0]->ToInt32()->Value()) != 0)
+        {
+            throw_message("Could not set tilt angle");
+        }
     }
 
 
@@ -479,7 +483,7 @@ namespace kinect
 
 
     // =====================================================================
-    // = Helpers                                                           =
+    // = Node initialization                                               =
     // =====================================================================
 
     void Context::Initialize(Handle<Object> target)
