@@ -44,9 +44,14 @@ namespace kinect {
       void StopDepth();
 
       static v8::Handle<v8::Value> CallSetDepthCallback(
-              v8::Arguments const&args);
+              v8::Arguments const &args);
 
       void SetDepthCallback(v8::Arguments const&args);
+
+      static v8::Handle<v8::Value> CallUnsetDepthCallback(
+              v8::Arguments const &args);
+
+      void UnsetDepthCallback();
 
 
       // = Video ===============================================================

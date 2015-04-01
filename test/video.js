@@ -10,6 +10,7 @@ describe("Video", function() {
   });
 
   afterEach(function() {
+    context.unsetDepthCallback();
     context.close();
   });
 

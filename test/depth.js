@@ -10,6 +10,7 @@ describe("Depth", function() {
   });
 
   afterEach(function() {
+    context.unsetDepthCallback();
     context.close();
   });
 

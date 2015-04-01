@@ -254,29 +254,27 @@ namespace kinect {
 
     void Context::SetDepthCallback(Arguments const &args)
     {
-        HandleScope scope;
-
-        if (args.Length() == 0)
+        if (args.Length() != 1 || !args[0]->IsFunction())
         {
-            depth_callback_.Dispose();
-            depth_callback_.Clear();
-            return;
-        }
-
-        if (args.Length() != 1)
-        {
-            throw_message("Wrong number of arguments, expects at most 1");
-            return;
-        }
-
-        if (!args[0]->IsFunction())
-        {
-            throw_message("Argument must be a function");
+            throw_message("Expected 1 functions as arguments");
             return;
         }
 
         depth_callback_ = Persistent<Function>::New(
                 Local<Function>::Cast(args[0]));
+    }
+
+    Handle<Value> Context::CallUnsetDepthCallback(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->UnsetDepthCallback();
+        return scope.Close(Undefined());
+    }
+
+    void Context::UnsetDepthCallback()
+    {
+        depth_callback_.Dispose();
+        depth_callback_.Clear();
     }
 
     void Context::DepthCallback()
@@ -491,7 +489,10 @@ namespace kinect {
         NODE_SET_PROTOTYPE_METHOD(tpl, "resume",           Resume);
         NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth",       StartDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth",        StopDepth);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback", CallSetDepthCallback);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback",
+                CallSetDepthCallback);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "unsetDepthCallback",
+                CallUnsetDepthCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "setVideoCallback", CallSetVideoCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "unsetVideoCallback",
                 CallUnsetVideoCallback);
