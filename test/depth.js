@@ -15,7 +15,8 @@ describe("Depth", function() {
 
   it("should allow to pass in a depth callback", function(done) {
     this.timeout(60000);
-    context.start('depth');
+    context.setDepthCallback(handleDepth);
+    context.startDepth();
     context.resume();
     var missingFrames = 1000;
 
@@ -31,6 +32,5 @@ describe("Depth", function() {
 
       if (missingFrames == 0) done();
     }
-    context.on('depth', handleDepth);
   });
 });

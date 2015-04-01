@@ -177,15 +177,12 @@ namespace kinect {
 
     void Context::VideoCallback()
     {
-        assert(videoBuffer_ != nullptr);
-        sending_ = true;
-        if (!video_callback_.IsEmpty())
+        if (videoBuffer_ != nullptr && !video_callback_.IsEmpty())
         {
             unsigned const argc = 1;
             Handle<Value> argv[1] = { videoBuffer_->handle_ };
             video_callback_->Call(handle_, argc, argv);
         }
-        sending_ = false;
     }
 
 
@@ -195,67 +192,105 @@ namespace kinect {
 
     // = Start =============================================================
 
-    // = Stop ==============================================================
-
-    // = Callback ==========================================================
-
-
-    Handle<Value> Context::SetDepthCallback(Arguments const &args)
+    Handle<Value> Context::StartDepth(Arguments const &args)
     {
         HandleScope scope;
-        GetContext(args)->SetDepthCallback();
-        return Undefined();
+        GetContext(args)->StartDepth();
+        return scope.Close(Undefined());
     }
 
-    void Context::SetDepthCallback()
+    void Context::StartDepth()
     {
-        if (!depthCallback_)
+        freenect_set_depth_callback(device_, depth_callback);
+
+        if (freenect_set_depth_mode(device_, depthMode_) != 0)
         {
-            depthCallback_ = true;
-            freenect_set_depth_callback(device_, depth_callback);
+            throw_message("Could not set depth mode");
+            return;
+        }
 
-            if (freenect_set_depth_mode(device_, depthMode_) != 0)
-            {
-                throw_message("Error setting depth mode");
-                return;
-            }
-
-            depthBuffer_ = Buffer::New(depthMode_.bytes);
-            depthBufferPersistentHandle_ =
+        depthBuffer_ = Buffer::New(depthMode_.bytes);
+        depthBufferPersistentHandle_ =
                 Persistent<Value>::New(depthBuffer_->handle_);
 
-            if (freenect_set_depth_buffer(device_, Buffer::Data(depthBuffer_)) != 0)
-            {
-                throw_message("Error setting depth buffer");
-            }
+        if (freenect_set_depth_buffer(device_, Buffer::Data(depthBuffer_)) != 0)
+        {
+            throw_message("Could not set depth buffer");
+            return;
         }
 
         if (freenect_start_depth(device_) != 0)
         {
-            throw_message("Error starting depth");
+            throw_message("Could not start depth");
             return;
         }
     }
 
+
+    // = Stop ==============================================================
+
+    Handle<Value> Context::StopDepth(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->StopDepth();
+        return scope.Close(Undefined());
+    }
+
+    void Context::StopDepth()
+    {
+        freenect_stop_depth(device_);
+        freenect_set_depth_buffer(device_, nullptr);
+        depthBufferPersistentHandle_.Dispose();
+        depthBufferPersistentHandle_.Clear();
+        depthBuffer_ = nullptr;
+        freenect_set_depth_callback(device_, nullptr);
+    }
+
+
+    // = Callback ==========================================================
+
+    Handle<Value> Context::CallSetDepthCallback(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->SetDepthCallback(args);
+        return Undefined();
+    }
+
+    void Context::SetDepthCallback(Arguments const &args)
+    {
+        HandleScope scope;
+
+        if (args.Length() == 0)
+        {
+            depth_callback_.Dispose();
+            depth_callback_.Clear();
+            return;
+        }
+
+        if (args.Length() != 1)
+        {
+            throw_message("Wrong number of arguments, expects at most 1");
+            return;
+        }
+
+        if (!args[0]->IsFunction())
+        {
+            throw_message("Argument must be a function");
+            return;
+        }
+
+        depth_callback_ = Persistent<Function>::New(
+                Local<Function>::Cast(args[0]));
+    }
+
     void Context::DepthCallback()
     {
-        sending_ = true;
-        if (depthCallbackSymbol.IsEmpty())
+        if (depthBuffer_ != nullptr && !depth_callback_.IsEmpty())
         {
-            depthCallbackSymbol = NODE_PSYMBOL("depthCallback");
+            unsigned const argc = 1;
+            Handle<Value> argv[1] = { depthBuffer_->handle_ };
+            depth_callback_->Call(handle_, argc, argv);
         }
-
-        Local<Value> callback_v =handle_->Get(depthCallbackSymbol);
-
-        if (!callback_v->IsFunction())
-        {
-            throw_message("depthCallback should be a function");
-        }
-
-        Local<Function> callback = Local<Function>::Cast(callback_v);
-        Handle<Value> argv[1] = { depthBuffer_->handle_ };
-        callback->Call(handle_, 1, argv);
-        sending_ = false;
     }
 
 
@@ -458,7 +493,9 @@ namespace kinect {
         NODE_SET_PROTOTYPE_METHOD(tpl, "led",              Led);
         NODE_SET_PROTOTYPE_METHOD(tpl, "pause",            Pause);
         NODE_SET_PROTOTYPE_METHOD(tpl, "resume",           Resume);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback", SetDepthCallback);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth",       StartDepth);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth",        StopDepth);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback", CallSetDepthCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "setVideoCallback", SetVideoCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "startVideo",       StartVideo);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopVideo",        StopVideo);

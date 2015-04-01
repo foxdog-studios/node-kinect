@@ -33,8 +33,23 @@ namespace kinect {
       void                          Tilt             (const double angle);
       static v8::Handle<v8::Value>  Tilt             (const v8::Arguments &args);
 
-      void                          SetDepthCallback ();
-      static v8::Handle<v8::Value>  SetDepthCallback (const v8::Arguments &args);
+      // = Depth ===============================================================
+
+      static v8::Handle<v8::Value> StartDepth(v8::Arguments const &args);
+
+      void StartDepth();
+
+      static v8::Handle<v8::Value> StopDepth(v8::Arguments const &args);
+
+      void StopDepth();
+
+      static v8::Handle<v8::Value> CallSetDepthCallback(
+              v8::Arguments const&args);
+
+      void SetDepthCallback(v8::Arguments const&args);
+
+
+      // = Video ===============================================================
 
       static v8::Handle<v8::Value> StartVideo(v8::Arguments const &args);
       void StartVideo();
@@ -56,12 +71,13 @@ namespace kinect {
       bool                  depthCallback_;
       bool                  videoCallback_;
 
+      v8::Persistent<v8::Function> depth_callback_;
       v8::Persistent<v8::Function> video_callback_;
 
       node::Buffer*         videoBuffer_;
       v8::Persistent<v8::Value> videoBufferPersistentHandle_;
       node::Buffer*         depthBuffer_;
-      v8::Handle<v8::Value> depthBufferPersistentHandle_;
+      v8::Persistent<v8::Value> depthBufferPersistentHandle_;
 
       freenect_device*      device_;
       freenect_frame_mode   videoMode_;

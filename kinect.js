@@ -41,6 +41,18 @@ kinect.Context.prototype.videoCallback = function videoCallback(videoBuffer) {
   this._context.emit('video', videoBuffer);
 };
 
+Context.prototype.startDepth = function startDepth () {
+  this._kContext.startDepth();
+};
+
+Context.prototype.stopDepth = function stopDepth () {
+  this._kContext.stopDepth();
+};
+
+Context.prototype.setDepthCallback = function setDepthCallback (callback) {
+  this._kContext.setDepthCallback(callback);
+};
+
 Context.prototype.startVideo = function startVideo () {
   this._kContext.startVideo();
 };
