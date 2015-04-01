@@ -36,8 +36,14 @@ namespace kinect {
       void                          SetDepthCallback ();
       static v8::Handle<v8::Value>  SetDepthCallback (const v8::Arguments &args);
 
-      void                          SetVideoCallback ();
-      static v8::Handle<v8::Value>  SetVideoCallback (const v8::Arguments &args);
+      static v8::Handle<v8::Value> StartVideo(v8::Arguments const &args);
+      void StartVideo();
+
+      static v8::Handle<v8::Value> StopVideo(v8::Arguments const &args);
+      void StopVideo();
+
+      static v8::Handle<v8::Value> SetVideoCallback(v8::Arguments const &args);
+      v8::Handle<v8::Value> ConfigureVideo(v8::Arguments const &args);
 
       void                          Pause            ();
       static v8::Handle<v8::Value>  Pause            (const v8::Arguments &args);
@@ -49,8 +55,11 @@ namespace kinect {
 
       bool                  depthCallback_;
       bool                  videoCallback_;
+
+      v8::Persistent<v8::Function> video_callback_;
+
       node::Buffer*         videoBuffer_;
-      v8::Handle<v8::Value> videoBufferPersistentHandle_;
+      v8::Persistent<v8::Value> videoBufferPersistentHandle_;
       node::Buffer*         depthBuffer_;
       v8::Handle<v8::Value> depthBufferPersistentHandle_;
 

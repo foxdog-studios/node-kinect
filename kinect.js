@@ -41,6 +41,18 @@ kinect.Context.prototype.videoCallback = function videoCallback(videoBuffer) {
   this._context.emit('video', videoBuffer);
 };
 
+Context.prototype.startVideo = function startVideo () {
+  this._kContext.startVideo();
+};
+
+Context.prototype.stopVideo = function stopVideo () {
+  this._kContext.stopVideo();
+};
+
+Context.prototype.setVideoCallback = function setVideoCallback (callback) {
+  this._kContext.setVideoCallback(callback);
+}
+
 Context.prototype.led = function lef(color) {
   this._kContext.led(color);
 };

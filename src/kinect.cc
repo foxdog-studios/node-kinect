@@ -14,6 +14,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 #include "kinect.h"
 
@@ -90,70 +91,121 @@ namespace kinect {
     // = Video                                                             =
     // =====================================================================
 
-    Handle<Value> Context::SetVideoCallback(Arguments const& args)
+    // = Starting video ====================================================
+
+    Handle<Value> Context::StartVideo(Arguments const &args)
     {
         HandleScope scope;
-        GetContext(args)->SetVideoCallback();
-        return Undefined();
+        GetContext(args)->StartVideo();
+        return scope.Close(Undefined());
     }
 
-    void Context::SetVideoCallback()
+    void Context::StartVideo()
     {
-        if (!videoCallback_)
+        freenect_set_video_callback(device_, video_callback);
+
+        if (freenect_set_video_mode(device_, videoMode_) != 0)
         {
-            freenect_set_video_callback(device_, video_callback);
+            throw_message("Could not set video mode");
+            return;
+        }
 
-            videoCallback_ = true;
-            if (freenect_set_video_mode(device_, videoMode_) != 0)
-            {
-                throw_message("Error setting Video mode");
-                return;
-            }
+        videoBuffer_ = Buffer::New(videoMode_.bytes);
 
-            videoBuffer_ = Buffer::New(videoMode_.bytes);
-            videoBufferPersistentHandle_ = Persistent<Value>::New(videoBuffer_->handle_);
-            if (freenect_set_video_buffer(device_, Buffer::Data(videoBuffer_)) != 0)
-            {
-                throw_message("Error setting Video buffer");
-            }
+        videoBufferPersistentHandle_ =
+            Persistent<Value>::New(videoBuffer_->handle_);
 
+        if (freenect_set_video_buffer(device_, Buffer::Data(videoBuffer_)) != 0)
+        {
+            throw_message("Could not set video buffer");
+            return;
         }
 
         if (freenect_start_video(device_) != 0)
         {
-            throw_message("Error starting video");
+            throw_message("Could not start video");
             return;
         }
     }
 
+
+    // = Stopping video ====================================================
+
+    Handle<Value> Context::StopVideo(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->StopVideo();
+        return scope.Close(Undefined());
+    }
+
+    void Context::StopVideo()
+    {
+        freenect_stop_video(device_);
+        freenect_set_video_buffer(device_, nullptr);
+        videoBufferPersistentHandle_.Dispose();
+        videoBufferPersistentHandle_.Clear();
+        videoBuffer_ = nullptr;
+        freenect_set_video_callback(device_, nullptr);
+    }
+
+
+    // = Video callback ====================================================
+
+    Handle<Value> Context::SetVideoCallback(Arguments const& args)
+    {
+        HandleScope scope;
+        GetContext(args)->ConfigureVideo(args);
+        return scope.Close(Undefined());
+    }
+
+    Handle<Value> Context::ConfigureVideo(Arguments const &args)
+    {
+        HandleScope scope;
+
+        if (args.Length() == 0)
+        {
+            video_callback_.Dispose();
+            video_callback_.Clear();
+            return scope.Close(Undefined());
+        }
+
+        if (args.Length() != 1)
+        {
+            throw_message("Wrong number of arguments, expects at most 1");
+            return scope.Close(Undefined());
+        }
+
+        if (!args[0]->IsFunction())
+        {
+            throw_message("Argument must be a function");
+            return scope.Close(Undefined());
+        }
+
+        video_callback_ = Persistent<Function>::New(
+                Local<Function>::Cast(args[0]));
+
+        return scope.Close(Undefined());
+    }
+
     void Context::VideoCallback()
     {
-        sending_ = true;
         assert(videoBuffer_ != nullptr);
-
-        if (videoCallbackSymbol.IsEmpty())
+        sending_ = true;
+        if (!video_callback_.IsEmpty())
         {
-            videoCallbackSymbol = NODE_PSYMBOL("videoCallback");
+            unsigned const argc = 1;
+            Handle<Value> argv[1] = { videoBuffer_->handle_ };
+            video_callback_->Call(handle_, argc, argv);
         }
-
-        Local<Value> callback_v =handle_->Get(videoCallbackSymbol);
-
-        if (!callback_v->IsFunction())
-        {
-            throw_message("VideoCallback should be a function");
-        }
-
-        Local<Function> callback = Local<Function>::Cast(callback_v);
-
-        Handle<Value> argv[1] = { videoBuffer_->handle_ };
-        callback->Call(handle_, 1, argv);
         sending_ = false;
     }
 
 
+    // =====================================================================
+    // = Depth                                                             =
+    // =====================================================================
 
-  /********* Depth ****************/
-
+    // = Starting depth ====================================================
 
 
   void
@@ -306,23 +358,6 @@ namespace kinect {
     return args.This();
   }
 
-  void
-  Context::Initialize(v8::Handle<v8::Object> target) {
-    HandleScope scope;
-
-    Local<FunctionTemplate> t = FunctionTemplate::New(New);
-    t->InstanceTemplate()->SetInternalFieldCount(1);
-
-    NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
-    NODE_SET_PROTOTYPE_METHOD(t, "led",   Led);
-    NODE_SET_PROTOTYPE_METHOD(t, "tilt",   Tilt);
-    NODE_SET_PROTOTYPE_METHOD(t, "setDepthCallback", SetDepthCallback);
-    NODE_SET_PROTOTYPE_METHOD(t, "setVideoCallback", SetVideoCallback);
-    NODE_SET_PROTOTYPE_METHOD(t, "pause",            Pause);
-    NODE_SET_PROTOTYPE_METHOD(t, "resume",           Resume);
-
-    target->Set(String::NewSymbol("Context"), t->GetFunction());
-  }
 
   Context::Context(int user_device_number) : ObjectWrap() {
     context_         = NULL;
@@ -407,13 +442,25 @@ namespace kinect {
         return ObjectWrap::Unwrap<kinect::Context>(args.This());
     }
 
-  void
-  Initialize(Handle<Object> target) {
-    Context::Initialize(target);
-  }
+    void Context::Initialize(Handle<Object> target)
+    {
+        HandleScope scope;
 
+        Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
+        tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
+        NODE_SET_PROTOTYPE_METHOD(tpl, "close",            Close);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "led",              Led);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "pause",            Pause);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "resume",           Resume);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback", SetDepthCallback);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setVideoCallback", SetVideoCallback);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "startVideo",       StartVideo);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "stopVideo",        StopVideo);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "tilt",             Tilt);
 
+        target->Set(String::NewSymbol("Context"), tpl->GetFunction());
+    }
 }
 
 
@@ -434,12 +481,6 @@ namespace
         return context;
     }
 
-    void async_video_callback(uv_async_t *handle, int notUsed)
-    {
-        auto const context = get_kinect_context(handle);
-        context->VideoCallback();
-    }
-
     void video_callback(freenect_device *dev, void *video, uint32_t timestamp)
     {
         auto const context = get_kinect_context(dev);
@@ -447,6 +488,12 @@ namespace
             return;
         context->uv_async_video_callback_.data = (void *) context;
         uv_async_send(&context->uv_async_video_callback_);
+    }
+
+    void async_video_callback(uv_async_t *handle, int notUsed)
+    {
+        auto const context = get_kinect_context(handle);
+        context->VideoCallback();
     }
 
     void async_depth_callback(uv_async_t *handle, int notUsed)
@@ -471,11 +518,11 @@ namespace
 }
 
 
-extern "C" void
-init(Handle<Object> target)
+void init(Handle<Object> target)
 {
-  kinect::Initialize(target);
+    kinect::Context::Initialize(target);
 }
+
 
 NODE_MODULE(kinect, init)
 

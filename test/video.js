@@ -13,9 +13,10 @@ describe("Video", function() {
     context.close();
   });
 
-  it("should allow to pass in a depth callback", function(done) {
+  it("should pass video frames to the callback", function(done) {
     this.timeout(60000);
-    context.start('video');
+    context.setVideoCallback(handleVideo);
+    context.startVideo();
     context.resume();
     var missingFrames = 1000;
 
@@ -31,6 +32,5 @@ describe("Video", function() {
 
       if (missingFrames == 0) done();
     }
-    context.on('video', handleVideo);
   });
 });
