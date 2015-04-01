@@ -3,35 +3,12 @@ var EventEmitter = require('events').EventEmitter;
 var inherits     = require('util').inherits;
 var assert       = require('assert');
 
-function Context(context) {
+function Context (context) {
   this._kContext = context;
-  this._activated = {};
   EventEmitter.apply(this, arguments);
 }
+
 inherits(Context, EventEmitter);
-
-Context.prototype.activate = function(wat) {
-  var self = this;
-  if (this._activated[wat]) throw new Error('Already had activated ' + wat)
-  switch(wat) {
-    case "depth":
-      process.nextTick(function() {
-        self._kContext.setDepthCallback();
-      });
-      break;
-
-    case "video":
-      //var buf = self._videoBuffer = new Buffer(640 * 480 * 3);
-      //self._kContext.setVideoBuffer(buf);
-      self._kContext.setVideoCallback();
-      break;
-
-    default: throw new Error('Cannot activate ' + wat);
-  }
-  this._activated[wat] = true;
-};
-
-Context.prototype.start = Context.prototype.activate;
 
 kinect.Context.prototype.depthCallback = function depthCallback(depthBuffer) {
   this._context.emit('depth', depthBuffer);
