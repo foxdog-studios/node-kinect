@@ -28,51 +28,170 @@ namespace
 }
 
 
-namespace kinect {
-  /********************************/
-  /********* Flow *****************/
-  /********************************/
+namespace kinect
+{
+    Handle<Value> Context::New(Arguments const &args)
+    {
+        HandleScope scope;
 
-  void
-  process_event_thread(void *arg) {
-    Context * context = (Context *) arg;
-    while(context->running_) {
-      freenect_process_events(context->context_);
+        assert(args.IsConstructCall());
+
+        int user_device_number = 0;
+
+        if (args.Length() == 1)
+        {
+            if (!args[0]->IsNumber())
+            {
+                return ThrowException(Exception::TypeError(
+                            String::New("user_device_number must be an integer")));
+            }
+            user_device_number = (int) args[0]->ToInteger()->Value();
+            if (user_device_number < 0)
+            {
+                return ThrowException(Exception::RangeError(
+                            String::New("user_device_number must be a natural number")));
+            }
+        }
+
+        Context *context = new Context(user_device_number);
+        context->Wrap(args.This());
+
+        return args.This();
     }
-  }
 
-  void
-  Context::InitProcessEventThread() {
-    uv_thread_create(&event_thread_, process_event_thread, this);
-  }
+    Context::Context(int user_device_number) : ObjectWrap()
+    {
+        context_         = NULL;
+        device_          = NULL;
+        depthCallback_   = false;
+        videoCallback_   = false;
+        running_         = false;
 
-  void
-  Context::Resume() {
-    if (! running_) {
-      running_ = true;
-      InitProcessEventThread();
+        if (freenect_init(&context_, NULL) < 0)
+        {
+            ThrowException(Exception::Error(String::New("Error initializing freenect context")));
+            return;
+        }
+
+        freenect_set_log_level(context_, FREENECT_LOG_DEBUG);
+        freenect_select_subdevices(context_, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
+        int nr_devices = freenect_num_devices (context_);
+        if (nr_devices < 1)
+        {
+            Close();
+            ThrowException(Exception::Error(String::New("No kinect devices present")));
+            return;
+        }
+
+        if (freenect_open_device(context_, &device_, user_device_number) < 0)
+        {
+            Close();
+            ThrowException(Exception::Error(String::New("Could not open device number\n")));
+            return;
+        }
+
+        freenect_set_user(device_, this);
+
+        // Initialize video mode
+        videoMode_ = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB);
+        assert(videoMode_.is_valid);
+
+        // Initialize depth mode
+        depthMode_ = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT);
+        assert(depthMode_.is_valid);
+
+        // LibUV stuff
+        uv_loop_t *loop = uv_default_loop();
+        uv_async_init(loop, &uv_async_video_callback_, async_video_callback);
+        uv_async_init(loop, &uv_async_depth_callback_, async_depth_callback);
     }
-  }
 
-  Handle<Value>
-  Context::Resume(const Arguments& args) {
-    GetContext(args)->Resume();
-    return Undefined();
-  }
-
-  void
-  Context::Pause() {
-    if (running_) {
-      running_ = false;
-      uv_thread_join(&event_thread_);
+    Context::~Context()
+    {
+        Close();
     }
-  }
 
-  Handle<Value>
-  Context::Pause(const Arguments& args) {
-    GetContext(args)->Pause();
-    return Undefined();
-  }
+
+    // =====================================================================
+    // = Flow?                                                             =
+    // =====================================================================
+
+    void process_event_thread(void *arg)
+    {
+        Context *context = (Context *) arg;
+        while (context->running_)
+        {
+            freenect_process_events(context->context_);
+        }
+    }
+
+    Handle<Value> Context::Resume(Arguments const &args)
+    {
+        GetContext(args)->Resume();
+        return Undefined();
+    }
+
+    void Context::Resume()
+    {
+        if (! running_)
+        {
+            running_ = true;
+            InitProcessEventThread();
+        }
+    }
+
+    void Context::InitProcessEventThread()
+    {
+        uv_thread_create(&event_thread_, process_event_thread, this);
+    }
+
+
+    Handle<Value> Context::Pause(Arguments const &args)
+    {
+        GetContext(args)->Pause();
+        return Undefined();
+    }
+
+    void Context::Pause()
+    {
+        if (running_)
+        {
+            running_ = false;
+            uv_thread_join(&event_thread_);
+        }
+    }
+
+    Handle<Value> Context::Close(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->Close();
+        return Undefined();
+    }
+
+    void Context::Close()
+    {
+        running_ = false;
+
+        if (device_ != NULL)
+        {
+            if (freenect_close_device(device_) < 0)
+            {
+                ThrowException(Exception::Error(String::New(("Error closing device"))));
+                return;
+            }
+            device_ = NULL;
+        }
+
+        if (context_ != NULL)
+        {
+            if (freenect_shutdown(context_) < 0)
+            {
+                ThrowException(Exception::Error(String::New(("Error shutting down"))));
+                return;
+            }
+            context_ = NULL;
+        }
+    }
 
 
     // =====================================================================
@@ -340,116 +459,19 @@ namespace kinect {
     }
 
 
-  /********* Life Cycle ***********/
+    // =====================================================================
+    // = Helpers                                                           =
+    // =====================================================================
 
-  Handle<Value>
-  Context::New(const Arguments& args) {
-    HandleScope scope;
-
-    assert(args.IsConstructCall());
-
-    int user_device_number = 0;
-    if (args.Length() == 1) {
-      if (!args[0]->IsNumber()) {
-        return ThrowException(Exception::TypeError(
-          String::New("user_device_number must be an integer")));
-      }
-      user_device_number = (int) args[0]->ToInteger()->Value();
-      if (user_device_number < 0) {
-        return ThrowException(Exception::RangeError(
-          String::New("user_device_number must be a natural number")));
-      }
-    }
-
-    Context *context = new Context(user_device_number);
-    context->Wrap(args.This());
-
-    return args.This();
-  }
-
-
-  Context::Context(int user_device_number) : ObjectWrap() {
-    context_         = NULL;
-    device_          = NULL;
-    depthCallback_   = false;
-    videoCallback_   = false;
-    running_         = false;
-
-    if (freenect_init(&context_, NULL) < 0) {
-      ThrowException(Exception::Error(String::New("Error initializing freenect context")));
-      return;
-    }
-
-    freenect_set_log_level(context_, FREENECT_LOG_DEBUG);
-    freenect_select_subdevices(context_, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
-    int nr_devices = freenect_num_devices (context_);
-    if (nr_devices < 1) {
-      Close();
-      ThrowException(Exception::Error(String::New("No kinect devices present")));
-      return;
-    }
-
-    if (freenect_open_device(context_, &device_, user_device_number) < 0) {
-      Close();
-      ThrowException(Exception::Error(String::New("Could not open device number\n")));
-      return;
-    }
-
-    freenect_set_user(device_, this);
-
-    // Initialize video mode
-    videoMode_ = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB);
-    assert(videoMode_.is_valid);
-
-    // Initialize depth mode
-    depthMode_ = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT);
-    assert(depthMode_.is_valid);
-
-    // LibUV stuff
-    uv_loop_t *loop = uv_default_loop();
-    uv_async_init(loop, &uv_async_video_callback_, async_video_callback);
-    uv_async_init(loop, &uv_async_depth_callback_, async_depth_callback);
-  }
-
-  void
-  Context::Close() {
-
-    running_ = false;
-
-    if (device_ != NULL) {
-      if (freenect_close_device(device_) < 0) {
-        ThrowException(Exception::Error(String::New(("Error closing device"))));
-        return;
-      }
-
-      device_ = NULL;
-    }
-
-    if (context_ != NULL) {
-      if (freenect_shutdown(context_) < 0) {
-        ThrowException(Exception::Error(String::New(("Error shutting down"))));
-        return;
-      }
-
-      context_ = NULL;
-    }
-  }
-
-  Context::~Context() {
-    Close();
-  }
-
-  Handle<Value>
-  Context::Close(const Arguments& args) {
-    HandleScope scope;
-    GetContext(args)->Close();
-    return Undefined();
-   }
-
-    kinect::Context *Context::GetContext(Arguments const&args)
+    Context *Context::GetContext(Arguments const &args)
     {
-        return ObjectWrap::Unwrap<kinect::Context>(args.This());
+        return ObjectWrap::Unwrap<Context>(args.This());
     }
+
+
+    // =====================================================================
+    // = Helpers                                                           =
+    // =====================================================================
 
     void Context::Initialize(Handle<Object> target)
     {
@@ -465,12 +487,12 @@ namespace kinect {
         Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
         tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
-        NODE_SET_PROTOTYPE_METHOD(tpl, "close",            Close);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "pause",            Pause);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "resume",           Resume);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "close", Close);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "pause", Pause);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "resume", Resume);
 
-        NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth",       StartDepth);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth",        StopDepth);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth", StartDepth);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth", StopDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback",
                 CallSetDepthCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "unsetDepthCallback",
