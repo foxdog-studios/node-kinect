@@ -1,8 +1,7 @@
 var Kinect = require('..');
 var assert = require('assert');
 
-describe("Led", function() {
-
+describe("LED", function() {
   var context;
 
   beforeEach(function() {
@@ -13,32 +12,33 @@ describe("Led", function() {
     context.close();
   });
 
-  it("should throw when no string is specified", function() {
+  var names = [
+    'green',
+    'red',
+    'yellow',
+    'blink green',
+    'blink red yellow',
+    'off'
+  ]
+
+  names.forEach(function (name) {
+    it("sets the state of Kinect's LED to " + name, function(done) {
+      this.timeout(2500);
+      context.setLedOption(name);
+      setTimeout(done, 2000);
+    });
+  });
+
+  it("throws an error when no arguments as passed", function() {
     assert.throws(function() {
       context.led();
     });
   });
 
-  it("should throw when a non-supported string is specified", function() {
+  it("throws an error when the LED option name is invalid", function() {
     assert.throws(function() {
       context.led('pink');
     });
   });
-
-  ['off',
-   'green',
-   'red',
-   'yellow',
-   'blink green',
-   'blink red yellow',
-   'off'
-  ].forEach(function(color) {
-    it("gets " + color, function(done) {
-      this.timeout(5000);
-      context.led(color);
-      console.log('Should be ' + color + '...');
-      setTimeout(done, 2000);
-    });
-  });
-
 });
+

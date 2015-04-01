@@ -289,6 +289,66 @@ namespace kinect {
 
 
     // =====================================================================
+    // = LED                                                               =
+    // =====================================================================
+
+    Handle<Value> Context::CallSetLEDOption(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->SetLEDOption(args);
+        return scope.Close(Undefined());
+    }
+
+    void Context::SetLEDOption(Arguments const &args)
+    {
+        if (args.Length() != 1 || !args[0]->IsString())
+        {
+            throw_message("LED state name argument must be a string");
+            return;
+        }
+
+        std::string name = *String::AsciiValue(args[0]->ToString());
+
+        freenect_led_options option;
+
+        if (name == "off")
+        {
+            option = LED_OFF;
+        }
+        else if (name == "green")
+        {
+            option = LED_GREEN;
+        }
+        else if (name == "red")
+        {
+            option = LED_RED;
+        }
+        else if (name == "yellow")
+        {
+            option = LED_YELLOW;
+        }
+        else if (name == "blink green")
+        {
+            option = LED_BLINK_GREEN;
+        }
+        else if (name == "blink red yellow")
+        {
+            option = LED_BLINK_RED_YELLOW;
+        }
+        else
+        {
+            throw_message("Invalid LED option name");
+            return;
+        }
+
+        if (freenect_set_led(device_, option) != 0)
+        {
+            throw_message("Could not set LED option");
+        }
+    }
+
+
+    // =====================================================================
     // = Tilt                                                              =
     // =====================================================================
 
@@ -309,56 +369,6 @@ namespace kinect {
 
         freenect_set_tilt_degs(device_, args[0]->ToNumber()->NumberValue());
     }
-
-
-    // =====================================================================
-    // = LED                                                               =
-    // =====================================================================
-
-  void
-  Context::Led(const std::string option) {
-    freenect_led_options ledCode;
-
-    if (option == "off") {
-      ledCode = LED_OFF;
-    } else if (option == "green") {
-      ledCode = LED_GREEN;
-    } else if (option == "red") {
-      ledCode = LED_RED;
-    } else if (option == "yellow") {
-      ledCode = LED_YELLOW;
-    } else if (option == "blink green") {
-      ledCode = LED_BLINK_GREEN;
-    } else if (option == "blink red yellow") {
-      ledCode = LED_BLINK_RED_YELLOW;
-    } else {
-      ThrowException(Exception::Error(String::New("Did not recognize given led code")));
-      return;
-    }
-
-    if (freenect_set_led(device_, ledCode) < 0) {
-      ThrowException(Exception::Error(String::New("Error setting led")));
-      return;
-    }
-  }
-
-  Handle<Value>
-  Context::Led(const Arguments& args) {
-    HandleScope scope;
-
-    if (args.Length() == 1) {
-      if (!args[0]->IsString()) {
-        return ThrowException(Exception::TypeError(
-          String::New("led argument must be a string")));
-      }
-    } else {
-      return ThrowException(Exception::Error(String::New("Expecting at least one argument with the led status")));
-    }
-
-    String::AsciiValue val(args[0]->ToString());
-    GetContext(args)->Led(std::string(*val));
-    return Undefined();
-  }
 
 
   /********* Life Cycle ***********/
@@ -480,21 +490,25 @@ namespace kinect {
         tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "close",            Close);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "led",              Led);
         NODE_SET_PROTOTYPE_METHOD(tpl, "pause",            Pause);
         NODE_SET_PROTOTYPE_METHOD(tpl, "resume",           Resume);
+
         NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth",       StartDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth",        StopDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "setDepthCallback",
                 CallSetDepthCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "unsetDepthCallback",
                 CallUnsetDepthCallback);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "setVideoCallback", CallSetVideoCallback);
+
+        NODE_SET_PROTOTYPE_METHOD(tpl, "startVideo", StartVideo);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "stopVideo", StopVideo);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setVideoCallback",
+                CallSetVideoCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "unsetVideoCallback",
                 CallUnsetVideoCallback);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "startVideo",       StartVideo);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "stopVideo",        StopVideo);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "setTilt",          CallTilt);
+
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setLedOption", CallSetLEDOption);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setTilt", CallTilt);
 
         target->Set(String::NewSymbol("Context"), tpl->GetFunction());
     }

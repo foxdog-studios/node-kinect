@@ -27,8 +27,6 @@ namespace kinect {
       void                          Close            ();
       static v8::Handle<v8::Value>  Close            (const v8::Arguments &args);
 
-      void                          Led              (const std::string option);
-      static v8::Handle<v8::Value>  Led              (const v8::Arguments &args);
 
       // = Depth ===============================================================
 
@@ -70,6 +68,13 @@ namespace kinect {
               v8::Arguments const &args);
 
       void UnsetVideoCallback();
+
+
+      // = LED =================================================================
+
+      static v8::Handle<v8::Value> CallSetLEDOption(v8::Arguments const &args);
+
+      void SetLEDOption(v8::Arguments const &args);
 
 
       // = Tilt ================================================================
