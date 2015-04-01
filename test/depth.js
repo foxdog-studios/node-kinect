@@ -20,7 +20,7 @@ describe("Depth", function() {
     context.startDepth();
     context.resume();
 
-    var remaining = 1000;
+    var remaining = 100;
 
     function handleDepth(buf) {
       remaining--;

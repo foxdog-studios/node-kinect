@@ -20,7 +20,7 @@ describe("Video", function() {
     context.startVideo();
     context.resume();
 
-    var remaining = 1000;
+    var remaining = 100;
 
     function handleVideo(buf) {
       remaining--;

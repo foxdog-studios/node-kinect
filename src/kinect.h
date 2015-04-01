@@ -30,9 +30,6 @@ namespace kinect {
       void                          Led              (const std::string option);
       static v8::Handle<v8::Value>  Led              (const v8::Arguments &args);
 
-      void                          Tilt             (const double angle);
-      static v8::Handle<v8::Value>  Tilt             (const v8::Arguments &args);
-
       // = Depth ===============================================================
 
       static v8::Handle<v8::Value> StartDepth(v8::Arguments const &args);
@@ -73,6 +70,12 @@ namespace kinect {
               v8::Arguments const &args);
 
       void UnsetVideoCallback();
+
+
+      // = Tilt ================================================================
+
+      static v8::Handle<v8::Value> CallTilt(v8::Arguments const &args);
+      void Tilt(v8::Arguments const &args);
 
       void                          Pause            ();
       static v8::Handle<v8::Value>  Pause            (const v8::Arguments &args);

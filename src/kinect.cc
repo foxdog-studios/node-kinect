@@ -292,28 +292,24 @@ namespace kinect {
     // = Tilt                                                              =
     // =====================================================================
 
-  void
-  Context::Tilt(const double angle) {
-    freenect_set_tilt_degs(device_, angle);
-  }
+    Handle<Value> Context::CallTilt(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->Tilt(args);
+        return scope.Close(Undefined());
 
-  Handle<Value>
-  Context::Tilt(const Arguments& args) {
-    HandleScope scope;
-
-    if (args.Length() == 1) {
-      if (!args[0]->IsNumber()) {
-        return ThrowException(Exception::TypeError(
-          String::New("tilt argument must be a number")));
-      }
-    } else {
-      return ThrowException(Exception::Error(String::New("Expecting at least one argument with the led status")));
     }
 
-    double angle = args[0]->ToNumber()->NumberValue();
-    GetContext(args)->Tilt(angle);
-    return Undefined();
-  }
+    void Context::Tilt(Arguments const &args)
+    {
+        if (args.Length() != 1 || !args[0]->IsNumber())
+        {
+            throw_message("Expected 1 number");
+        }
+
+        freenect_set_tilt_degs(device_, args[0]->ToNumber()->NumberValue());
+    }
+
 
     // =====================================================================
     // = LED                                                               =
@@ -498,7 +494,7 @@ namespace kinect {
                 CallUnsetVideoCallback);
         NODE_SET_PROTOTYPE_METHOD(tpl, "startVideo",       StartVideo);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopVideo",        StopVideo);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "tilt",             Tilt);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setTilt",          CallTilt);
 
         target->Set(String::NewSymbol("Context"), tpl->GetFunction());
     }
