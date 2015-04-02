@@ -13,7 +13,6 @@ namespace kinect {
       void                   DepthCallback    ();
       void                   VideoCallback    ();
       bool                   running_;
-      bool                   sending_;
       freenect_context*      context_;
       uv_async_t             uv_async_video_callback_;
       uv_async_t             uv_async_depth_callback_;

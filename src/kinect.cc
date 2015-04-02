@@ -528,6 +528,40 @@ namespace kinect
 
 namespace
 {
+    // = Depth =============================================================
+
+    void depth_callback(freenect_device *dev, void *depth, uint32_t timestamp)
+    {
+        auto const context = get_kinect_context(dev);
+        context->uv_async_depth_callback_.data = (void *) context;
+        uv_async_send(&context->uv_async_depth_callback_);
+    }
+
+    void async_depth_callback(uv_async_t *handle, int notUsed)
+    {
+        auto const context = get_kinect_context(handle);
+        context->DepthCallback();
+    }
+
+
+    // = Video =============================================================
+
+    void video_callback(freenect_device *dev, void *video, uint32_t timestamp)
+    {
+        auto const context = get_kinect_context(dev);
+        context->uv_async_video_callback_.data = (void *) context;
+        uv_async_send(&context->uv_async_video_callback_);
+    }
+
+    void async_video_callback(uv_async_t *handle, int notUsed)
+    {
+        auto const context = get_kinect_context(handle);
+        context->VideoCallback();
+    }
+
+
+    // = Helpers ===========================================================
+
     kinect::Context *get_kinect_context(uv_async_t *const handle)
     {
         auto const context = static_cast<kinect::Context *>(handle->data);
@@ -541,36 +575,6 @@ namespace
                 freenect_get_user(device));
         assert(context != nullptr);
         return context;
-    }
-
-    void video_callback(freenect_device *dev, void *video, uint32_t timestamp)
-    {
-        auto const context = get_kinect_context(dev);
-        if (context->sending_)
-            return;
-        context->uv_async_video_callback_.data = (void *) context;
-        uv_async_send(&context->uv_async_video_callback_);
-    }
-
-    void async_video_callback(uv_async_t *handle, int notUsed)
-    {
-        auto const context = get_kinect_context(handle);
-        context->VideoCallback();
-    }
-
-    void async_depth_callback(uv_async_t *handle, int notUsed)
-    {
-        auto const context = get_kinect_context(handle);
-        if (context->sending_)
-            return;
-        context->DepthCallback();
-    }
-
-    void depth_callback(freenect_device *dev, void *depth, uint32_t timestamp)
-    {
-        auto const context = get_kinect_context(dev);
-        context->uv_async_depth_callback_.data = (void *) context;
-        uv_async_send(&context->uv_async_depth_callback_);
     }
 
     void throw_message(char const *const message)
