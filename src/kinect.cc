@@ -187,14 +187,14 @@ namespace kinect
         }
     }
 
-    Handle<Value> Context::Pause(Arguments const &args)
+    Handle<Value> Context::CallStopProcessingEvents(Arguments const &args)
     {
         HandleScope scope;
-        GetContext(args)->Pause();
+        GetContext(args)->StopProcessingEvents();
         return scope.Close(Undefined());
     }
 
-    void Context::Pause()
+    void Context::StopProcessingEvents()
     {
         if (running_)
         {
@@ -506,7 +506,8 @@ namespace kinect
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "startProcessingEvents",
                 CallStartProcessingEvents);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "pause", Pause);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "stopProcessingEvents",
+                CallStopProcessingEvents);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth", StartDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth", StopDepth);

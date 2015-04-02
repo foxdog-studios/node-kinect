@@ -11,6 +11,7 @@ describe("Depth", function() {
   });
 
   afterEach(function() {
+    context.stopProcessingEvents();
     context.stopDepth();
     context.unsetDepthCallback();
     context.disable();
@@ -20,7 +21,7 @@ describe("Depth", function() {
     this.timeout(60000);
     context.setDepthCallback(handleDepth);
     context.startDepth();
-    context.resume();
+    context.startProcessingEvents();
 
     var remaining = 100;
 

@@ -28,16 +28,16 @@ namespace kinect {
       static v8::Handle<v8::Value> CallDisable(v8::Arguments const &args);
       static v8::Handle<v8::Value> Close(v8::Arguments const &args);
 
-      // = Depth ===============================================================
+      // = Events ==============================================================
 
       void StartProcessingEvents();
-      void Pause();
-
+      void StopProcessingEvents();
 
       static v8::Handle<v8::Value> CallStartProcessingEvents(
               v8::Arguments const &args);
 
-      static v8::Handle<v8::Value> Pause(v8::Arguments const &args);
+      static v8::Handle<v8::Value> CallStopProcessingEvents(
+              v8::Arguments const &args);
 
 
       // = Depth ===============================================================

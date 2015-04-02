@@ -10,6 +10,7 @@ describe("Video", function() {
   });
 
   afterEach(function() {
+    context.stopProcessingEvents();
     context.unsetDepthCallback();
     context.stopVideo();
     context.disable();
@@ -19,7 +20,7 @@ describe("Video", function() {
     this.timeout(60000);
     context.setVideoCallback(handleVideo);
     context.startVideo();
-    context.resume();
+    context.startProcessingEvents();
 
     var remaining = 100;
 
