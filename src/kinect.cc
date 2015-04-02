@@ -74,35 +74,33 @@ namespace kinect
 
         if (freenect_init(&context_, NULL) < 0)
         {
-            ThrowException(Exception::Error(String::New("Error initializing freenect context")));
+            throw_message("Error initializing freenect context");
             return;
         }
 
         freenect_set_log_level(context_, FREENECT_LOG_DEBUG);
-        freenect_select_subdevices(context_, (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
-        int nr_devices = freenect_num_devices (context_);
-        if (nr_devices < 1)
-        {
-            Close();
-            ThrowException(Exception::Error(String::New("No kinect devices present")));
-            return;
-        }
+
+        freenect_select_subdevices(context_,
+                (freenect_device_flags)
+                (FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA));
 
         if (freenect_open_device(context_, &device_, user_device_number) < 0)
         {
             Close();
-            ThrowException(Exception::Error(String::New("Could not open device number\n")));
+            throw_message("Could not open device number");
             return;
         }
 
         freenect_set_user(device_, this);
 
         // Initialize video mode
-        videoMode_ = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB);
+        videoMode_ = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM,
+                FREENECT_VIDEO_RGB);
         assert(videoMode_.is_valid);
 
         // Initialize depth mode
-        depthMode_ = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT);
+        depthMode_ = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM,
+                FREENECT_DEPTH_11BIT);
         assert(depthMode_.is_valid);
 
         // LibUV stuff
@@ -132,8 +130,9 @@ namespace kinect
 
     Handle<Value> Context::Resume(Arguments const &args)
     {
+        HandleScope scope;
         GetContext(args)->Resume();
-        return Undefined();
+        return scope.Close(Undefined());
     }
 
     void Context::Resume()
@@ -147,8 +146,9 @@ namespace kinect
 
     Handle<Value> Context::Pause(Arguments const &args)
     {
+        HandleScope scope;
         GetContext(args)->Pause();
-        return Undefined();
+        return scope.Close(Undefined());
     }
 
     void Context::Pause()
