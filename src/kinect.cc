@@ -1,3 +1,5 @@
+#include <sys/time.h>
+
 #include <node.h>
 #include <node_buffer.h>
 
@@ -533,10 +535,13 @@ namespace
     {
         auto const context = static_cast<kinect::Context *>(arg);
 
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
         while (context->running_)
         {
-            freenect_process_events(context->context_);
-
+            freenect_process_events_timeout(context->context_, &timeout);
         }
     }
 
