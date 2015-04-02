@@ -20,10 +20,12 @@ namespace kinect {
     private:
       Context();
       void Enable(v8::Arguments const &args);
+      void Disable();
 
       static Context *GetContext(v8::Arguments const &args);
       static v8::Handle<v8::Value> New(v8::Arguments const &args);
       static v8::Handle<v8::Value> CallEnable(v8::Arguments const &args);
+      static v8::Handle<v8::Value> CallDisable(v8::Arguments const &args);
       static v8::Handle<v8::Value> Close(v8::Arguments const &args);
 
       void Close();

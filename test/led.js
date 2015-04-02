@@ -5,11 +5,12 @@ describe("LED", function() {
   var context;
 
   beforeEach(function() {
-    context = new Kinect.Context(0);
+    context = new Kinect.Context;
+    context.enable(0);
   });
 
   afterEach(function() {
-    context.close();
+    context.disable();
   });
 
   var option_tests = [

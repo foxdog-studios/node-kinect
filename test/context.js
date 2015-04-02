@@ -6,20 +6,22 @@ describe("Context", function () {
 
   afterEach(function() {
     if (context) {
-      context.close();
+      context.disable();
       context = null;
     }
   });
 
   it('initializes and shuts down', function () {
-    context = new Kinect.Context(0);
-    context.close();
+    context = new Kinect.Context;
+    context.enable(0);
+    context.disable();
     context = null;
   });
 
   it('throws an error if the passed device index does not exists', function() {
     assert.throws(function() {
-      context = new Kinect.Kinect(100);
+      context = new Kinect.Context;
+      context.enable(100);;
     });
   });
 });

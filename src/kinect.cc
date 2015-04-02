@@ -15,6 +15,8 @@ namespace
     v8::Persistent<v8::String> depthCallbackSymbol;
     v8::Persistent<v8::String> videoCallbackSymbol;
 
+    void process_events_forever(void *);
+
     void video_callback(freenect_device *, void *, uint32_t);
     void async_video_callback(uv_async_t *, int);
 
@@ -49,7 +51,7 @@ namespace kinect
 
     Context::~Context()
     {
-        Close();
+        // Empty
     }
 
     Handle<Value> Context::CallEnable(Arguments const &args)
@@ -100,7 +102,6 @@ namespace kinect
 
         if (freenect_open_device(context_, &device_, user_device_number) < 0)
         {
-            Close();
             throw_message("Could not open device number");
             return;
         }
@@ -123,63 +124,15 @@ namespace kinect
         uv_async_init(loop, &uv_async_depth_callback_, async_depth_callback);
     }
 
-
-    // =====================================================================
-    // = Flow?                                                             =
-    // =====================================================================
-
-    void process_event_thread(void *arg)
-    {
-        Context *const context = static_cast<Context *>(arg);
-        while (context->running_)
-        {
-            freenect_process_events(context->context_);
-        }
-    }
-
-    Handle<Value> Context::Resume(Arguments const &args)
+    Handle<Value> Context::CallDisable(Arguments const &args)
     {
         HandleScope scope;
-        GetContext(args)->Resume();
+        GetContext(args)->Disable();
         return scope.Close(Undefined());
     }
 
-    void Context::Resume()
+    void Context::Disable()
     {
-        if (!running_)
-        {
-            running_ = true;
-            uv_thread_create(&event_thread_, process_event_thread, this);
-        }
-    }
-
-    Handle<Value> Context::Pause(Arguments const &args)
-    {
-        HandleScope scope;
-        GetContext(args)->Pause();
-        return scope.Close(Undefined());
-    }
-
-    void Context::Pause()
-    {
-        if (running_)
-        {
-            running_ = false;
-            uv_thread_join(&event_thread_);
-        }
-    }
-
-    Handle<Value> Context::Close(Arguments const &args)
-    {
-        HandleScope scope;
-        GetContext(args)->Close();
-        return scope.Close(Undefined());
-    }
-
-    void Context::Close()
-    {
-        running_ = false;
-
         std::string error_message;
 
         if (device_ != nullptr)
@@ -208,6 +161,43 @@ namespace kinect
         if (error_message.length() > 0)
         {
             throw_message(error_message.c_str());
+        }
+    }
+
+
+    // =====================================================================
+    // = libfreenect event processing                                      =
+    // =====================================================================
+
+    Handle<Value> Context::Resume(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->Resume();
+        return scope.Close(Undefined());
+    }
+
+    void Context::Resume()
+    {
+        if (!running_)
+        {
+            running_ = true;
+            uv_thread_create(&event_thread_, process_events_forever, this);
+        }
+    }
+
+    Handle<Value> Context::Pause(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->Pause();
+        return scope.Close(Undefined());
+    }
+
+    void Context::Pause()
+    {
+        if (running_)
+        {
+            running_ = false;
+            uv_thread_join(&event_thread_);
         }
     }
 
@@ -510,8 +500,8 @@ namespace kinect
         tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "enable", CallEnable);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "disable", CallDisable);
 
-        NODE_SET_PROTOTYPE_METHOD(tpl, "close", Close);
         NODE_SET_PROTOTYPE_METHOD(tpl, "pause", Pause);
         NODE_SET_PROTOTYPE_METHOD(tpl, "resume", Resume);
 
@@ -539,6 +529,17 @@ namespace kinect
 
 namespace
 {
+    void process_events_forever(void *const arg)
+    {
+        auto const context = static_cast<kinect::Context *>(arg);
+
+        while (context->running_)
+        {
+            freenect_process_events(context->context_);
+
+        }
+    }
+
     // = Depth =============================================================
 
     void depth_callback(freenect_device *dev, void *depth, uint32_t timestamp)

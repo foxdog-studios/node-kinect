@@ -6,12 +6,14 @@ describe("Depth", function() {
   var context;
 
   beforeEach(function() {
-    context = new Kinect.Context(0);
+    context = new Kinect.Context;
+    context.enable(0);
   });
 
   afterEach(function() {
+    context.stopDepth();
     context.unsetDepthCallback();
-    context.close();
+    context.disable();
   });
 
   it("should pass depth frames to the callback", function(done) {
