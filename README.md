@@ -27,21 +27,14 @@ $ npm test
 ## Create a context
 
 ```js
-var kinect = require('kinect');
-
-var context = kinect();
+var Kinect = require('kinect');
+var context = new Kinect.Context;
 ```
 
 Accepts options like this:
 
 ```js
-var kinect = require('kinect');
-
-var options = {
-  device: 2
-};
-
-var context = kinect(options);
+context.enable(0 /* device number */);
 ```
 
 
@@ -49,52 +42,36 @@ Options:
 
 * device: integer for device number. Default is 0
 
-## Resuming / pausing
+## Start/Stop Processing Events
 
-Kinect is paused by default, to start pumping video or depth you need to resume it like this:
-
-```js
-context.resume();
-```
-
-You can also pause it like this:
+To start processing events;
 
 ```js
-context.pause();
+var context = new Kinect.Context;
+context.enable();
+context.startProcessingEvents();
 ```
 
-## LED
+To stop processing events;
 
 ```js
-var kinect = require('kinect');
-
-var context = kinect();
-context.led("red");
+context.stopProcessingEvents();
 ```
-
-Accepts these strings as sole argument:
-
-* "off"
-* "green"
-* "red"
-* "yellow"
-* "blink green"
-* "blink red yellow"
 
 ## Video
 
 Enable video:
 
 ```js
-context.start('video');
-```
-
-Listen for video frames:
-
-```js
-context.on('video', function(buf) {
-  // buf is RGB-encoded, 640 x 480
+var Kinect = require('kinect');
+var context = new Kinect.Context
+var context.enable(0);
+context.setVideoCallback(function (buffer) {
+  // buffer is a 1D-array encoding a 640 x 480 RGB image
+  console.log(buffer.length);
 });
+context.startVideo();
+context.startProcessingEvents();
 ```
 
 ## Depth
@@ -102,41 +79,76 @@ context.on('video', function(buf) {
 Enable depth:
 
 ```js
-context.start('depth');
+var Kinect = require('kinect');
+var context = new Kinect.Context();
+context.enable(0);
+context.setDepthCallback(function (buffer) {
+  // each depth pixel in buf has 2 bytes, 640 x 480, 11 bit resolution
+  console.log(buffer.length);
+});
+context.startDepth();
+context.startProcessingEvents();
+
 ```
 
-Listen for depth frames:
+
+## LED
 
 ```js
-context.on('video', function(buf) {
-  // each depth pixel in buf has 2 bytes, 640 x 480, 11 bit resolution
-});
+var Kinect = require('kinect');
+var context = new Kinect.Context;
+context.enable();
+context.setLedOption(Kinect.LED_RED);
 ```
+
+`setLedOption()` accepts the constants;
+
+    * `Kinect.LED_OFF`
+    * `Kinect.LED_GREEN`
+    * `Kinect.LED_RED`
+    * `Kinect.LED_YELLOW`
+    * `Kinect.LED_BLINK_GREEN`
+    * `Kinect.LED_BLINK_RED_YELLOW`
+
 
 ## Tilt
 
 Set tilt angle:
 
 ```js
-context.tilt(angle);
+var Kinect = require('kinect');
+var context = new Kinect.Context();
+context.enable();
+context.setTitle(8 /* angle */);
 ```
 
 `angle` can be any number from -15 to 15. Number out of the range will be set to min/max.
 
 # FAQ
 
-## Can you control more than 1 kinect device at the same time?
-
-Yes, create different contexts with a different `device` option each.
 
 # License
 
 (The MIT License)
 
 Copyright (c) 2011 Pedro Teixeira. http://about.me/pedroteixeira
+Copyright (c) 2015 Foxdog Studios Ltd. https://foxdogstudios.com/
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the 'Software'), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
