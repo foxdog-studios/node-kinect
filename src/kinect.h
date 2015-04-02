@@ -18,13 +18,15 @@ namespace kinect {
       uv_async_t             uv_async_depth_callback_;
 
     private:
-      Context(int user_device_number);
+      Context();
+      void Enable(v8::Arguments const &args);
 
-      static v8::Handle<v8::Value>  New              (const v8::Arguments& args);
-      static Context*               GetContext       (const v8::Arguments &args);
+      static Context *GetContext(v8::Arguments const &args);
+      static v8::Handle<v8::Value> New(v8::Arguments const &args);
+      static v8::Handle<v8::Value> CallEnable(v8::Arguments const &args);
+      static v8::Handle<v8::Value> Close(v8::Arguments const &args);
 
-      void                          Close            ();
-      static v8::Handle<v8::Value>  Close            (const v8::Arguments &args);
+      void Close();
 
 
       // = Depth ===============================================================
@@ -86,9 +88,6 @@ namespace kinect {
 
       void                          Resume           ();
       static v8::Handle<v8::Value>  Resume           (const v8::Arguments &args);
-
-      bool                  depthCallback_;
-      bool                  videoCallback_;
 
       v8::Persistent<v8::Function> depth_callback_;
       v8::Persistent<v8::Function> video_callback_;

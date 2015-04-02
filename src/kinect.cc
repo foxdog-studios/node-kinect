@@ -33,7 +33,34 @@ namespace kinect
     Handle<Value> Context::New(Arguments const &args)
     {
         assert(args.IsConstructCall());
+        HandleScope scope;
+        Context *const context = new Context();
+        context->Wrap(args.This());
+        return scope.Close(args.This());
+    }
 
+    Context::Context() : ObjectWrap(),
+                         running_(false),
+                         context_(nullptr),
+                         device_(nullptr)
+    {
+        // Empty
+    }
+
+    Context::~Context()
+    {
+        Close();
+    }
+
+    Handle<Value> Context::CallEnable(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->Enable(args);
+        return scope.Close(Undefined());
+    }
+
+    void Context::Enable(Arguments const &args)
+    {
         HandleScope scope;
 
         int user_device_number;
@@ -48,7 +75,7 @@ namespace kinect
             if (!args[0]->IsInt32())
             {
                 throw_message("userDeviceNumber must be an integer");
-                return scope.Close(Undefined());
+                return;
             }
 
             user_device_number = args[0]->ToInt32()->Value();
@@ -56,23 +83,10 @@ namespace kinect
         else
         {
             throw_message("Excepted 1 argument");
-            return scope.Close(Undefined());
+            return;
         }
 
-        Context *const context = new Context(user_device_number);
-        context->Wrap(args.This());
-        return scope.Close(args.This());
-    }
-
-    Context::Context(int user_device_number) : ObjectWrap()
-    {
-        context_         = NULL;
-        device_          = NULL;
-        depthCallback_   = false;
-        videoCallback_   = false;
-        running_         = false;
-
-        if (freenect_init(&context_, NULL) < 0)
+        if (freenect_init(&context_, nullptr /* usb_ctx */) < 0)
         {
             throw_message("Error initializing freenect context");
             return;
@@ -104,14 +118,9 @@ namespace kinect
         assert(depthMode_.is_valid);
 
         // LibUV stuff
-        uv_loop_t *loop = uv_default_loop();
+        uv_loop_t *const loop = uv_default_loop();
         uv_async_init(loop, &uv_async_video_callback_, async_video_callback);
         uv_async_init(loop, &uv_async_depth_callback_, async_depth_callback);
-    }
-
-    Context::~Context()
-    {
-        Close();
     }
 
 
@@ -121,7 +130,7 @@ namespace kinect
 
     void process_event_thread(void *arg)
     {
-        Context *context = (Context *) arg;
+        Context *const context = static_cast<Context *>(arg);
         while (context->running_)
         {
             freenect_process_events(context->context_);
@@ -499,6 +508,8 @@ namespace kinect
 
         Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
         tpl->InstanceTemplate()->SetInternalFieldCount(1);
+
+        NODE_SET_PROTOTYPE_METHOD(tpl, "enable", CallEnable);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "close", Close);
         NODE_SET_PROTOTYPE_METHOD(tpl, "pause", Pause);
