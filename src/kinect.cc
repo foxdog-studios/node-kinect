@@ -168,17 +168,17 @@ namespace kinect
 
 
     // =====================================================================
-    // = libfreenect event processing                                      =
+    // = Events                                                            =
     // =====================================================================
 
-    Handle<Value> Context::Resume(Arguments const &args)
+    Handle<Value> Context::CallStartProcessingEvents(Arguments const &args)
     {
         HandleScope scope;
-        GetContext(args)->Resume();
+        GetContext(args)->StartProcessingEvents();
         return scope.Close(Undefined());
     }
 
-    void Context::Resume()
+    void Context::StartProcessingEvents()
     {
         if (!running_)
         {
@@ -504,8 +504,9 @@ namespace kinect
         NODE_SET_PROTOTYPE_METHOD(tpl, "enable", CallEnable);
         NODE_SET_PROTOTYPE_METHOD(tpl, "disable", CallDisable);
 
+        NODE_SET_PROTOTYPE_METHOD(tpl, "startProcessingEvents",
+                CallStartProcessingEvents);
         NODE_SET_PROTOTYPE_METHOD(tpl, "pause", Pause);
-        NODE_SET_PROTOTYPE_METHOD(tpl, "resume", Resume);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth", StartDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth", StopDepth);

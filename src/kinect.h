@@ -28,7 +28,16 @@ namespace kinect {
       static v8::Handle<v8::Value> CallDisable(v8::Arguments const &args);
       static v8::Handle<v8::Value> Close(v8::Arguments const &args);
 
-      void Close();
+      // = Depth ===============================================================
+
+      void StartProcessingEvents();
+      void Pause();
+
+
+      static v8::Handle<v8::Value> CallStartProcessingEvents(
+              v8::Arguments const &args);
+
+      static v8::Handle<v8::Value> Pause(v8::Arguments const &args);
 
 
       // = Depth ===============================================================
@@ -84,12 +93,6 @@ namespace kinect {
 
       static v8::Handle<v8::Value> CallTilt(v8::Arguments const &args);
       void Tilt(v8::Arguments const &args);
-
-      void                          Pause            ();
-      static v8::Handle<v8::Value>  Pause            (const v8::Arguments &args);
-
-      void                          Resume           ();
-      static v8::Handle<v8::Value>  Resume           (const v8::Arguments &args);
 
       v8::Persistent<v8::Function> depth_callback_;
       v8::Persistent<v8::Function> video_callback_;
