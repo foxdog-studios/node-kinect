@@ -100,7 +100,7 @@ namespace kinect {
       node::Buffer*         videoBuffer_;
       v8::Persistent<v8::Value> videoBufferPersistentHandle_;
       node::Buffer*         depthBuffer_;
-      v8::Persistent<v8::Value> depthBufferPersistentHandle_;
+      v8::Persistent<v8::Value> depth_buffer_handle_;
 
       freenect_device*      device_;
       freenect_frame_mode   videoMode_;

@@ -335,7 +335,7 @@ namespace kinect
         }
 
         depthBuffer_ = Buffer::New(depthMode_.bytes);
-        depthBufferPersistentHandle_ =
+        depth_buffer_handle_ =
                 Persistent<Value>::New(depthBuffer_->handle_);
 
         if (freenect_set_depth_buffer(device_, Buffer::Data(depthBuffer_)) != 0)
@@ -365,8 +365,8 @@ namespace kinect
     {
         freenect_stop_depth(device_);
         freenect_set_depth_buffer(device_, nullptr);
-        depthBufferPersistentHandle_.Dispose();
-        depthBufferPersistentHandle_.Clear();
+        depth_buffer_handle_.Dispose();
+        depth_buffer_handle_.Clear();
         depthBuffer_ = nullptr;
         freenect_set_depth_callback(device_, nullptr);
     }
