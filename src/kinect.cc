@@ -227,10 +227,11 @@ namespace kinect
             return;
         }
 
-        videoBuffer_ = Buffer::New(video_mode_.bytes);
-        video_buffer_handle_ = Persistent<Value>::New(videoBuffer_->handle_);
+        video_buffer_ = Buffer::New(video_mode_.bytes);
+        video_buffer_handle_ = Persistent<Value>::New(video_buffer_->handle_);
 
-        if (freenect_set_video_buffer(device_, Buffer::Data(videoBuffer_)) != 0)
+        if (freenect_set_video_buffer(device_, Buffer::Data(video_buffer_))
+                != 0)
         {
             throw_message("Could not set video buffer");
             return;
@@ -259,7 +260,7 @@ namespace kinect
         freenect_set_video_buffer(device_, nullptr);
         video_buffer_handle_.Dispose();
         video_buffer_handle_.Clear();
-        videoBuffer_ = nullptr;
+        video_buffer_ = nullptr;
         freenect_set_video_callback(device_, nullptr);
     }
 
@@ -300,10 +301,10 @@ namespace kinect
 
     void Context::VideoCallback()
     {
-        if (videoBuffer_ != nullptr && !video_callback_.IsEmpty())
+        if (video_buffer_ != nullptr && !video_callback_.IsEmpty())
         {
             unsigned const argc = 1;
-            Handle<Value> argv[1] = { videoBuffer_->handle_ };
+            Handle<Value> argv[1] = { video_buffer_->handle_ };
             video_callback_->Call(handle_, argc, argv);
         }
     }
