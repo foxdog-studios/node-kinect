@@ -17,6 +17,8 @@ namespace kinect {
       uv_async_t             uv_async_video_callback_;
       uv_async_t             uv_async_depth_callback_;
 
+      void process_events_forever();
+
     private:
       Context();
       void Enable(v8::Arguments const &args);

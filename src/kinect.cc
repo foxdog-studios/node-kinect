@@ -1,3 +1,4 @@
+#include <iostream>
 #include <sys/time.h>
 
 #include <node.h>
@@ -17,7 +18,7 @@ namespace
     v8::Persistent<v8::String> depthCallbackSymbol;
     v8::Persistent<v8::String> videoCallbackSymbol;
 
-    void process_events_forever(void *);
+    void call_process_events_forever(void *);
 
     void video_callback(freenect_device *, void *, uint32_t);
     void async_video_callback(uv_async_t *, int);
@@ -43,10 +44,8 @@ namespace kinect
         return scope.Close(args.This());
     }
 
-    Context::Context() : ObjectWrap(),
-                         running_(false),
-                         context_(nullptr),
-                         device_(nullptr)
+    Context::Context() : ObjectWrap(), running_(false), context_(nullptr),
+            device_(nullptr)
     {
         // Empty
     }
@@ -171,6 +170,9 @@ namespace kinect
         {
             throw_message(error_message.c_str());
         }
+
+        uv_close((uv_handle_t *) (&uv_async_depth_callback_), nullptr);
+        uv_close((uv_handle_t *) (&uv_async_video_callback_), nullptr);
     }
 
 
@@ -190,12 +192,12 @@ namespace kinect
         uv_mutex_lock(&lock_);
         if (running_)
         {
-            throw_message("Context is already running");
+            throw_message("Already processing events");
         }
         else
         {
             running_ = true;
-            uv_thread_create(&event_thread_, process_events_forever, this);
+            uv_thread_create(&event_thread_, call_process_events_forever, this);
         }
         uv_mutex_unlock(&lock_);
     }
@@ -209,10 +211,36 @@ namespace kinect
 
     void Context::StopProcessingEvents()
     {
-        if (running_)
+        uv_mutex_lock(&lock_);
+
+        if (!running_)
         {
-            running_ = false;
-            uv_thread_join(&event_thread_);
+            throw_message("Already stopped processing events");
+            uv_mutex_unlock(&lock_);
+            return;
+        }
+
+        running_ = false;
+        uv_mutex_unlock(&lock_);
+        uv_thread_join(&event_thread_);
+    }
+
+    void Context::process_events_forever()
+    {
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        for (;;)
+        {
+            uv_mutex_lock(&lock_);
+            bool running = running_;
+            uv_mutex_unlock(&lock_);
+
+            if (!running)
+                break;
+
+            freenect_process_events_timeout(context_, &timeout);
         }
     }
 
@@ -544,18 +572,9 @@ namespace kinect
 
 namespace
 {
-    void process_events_forever(void *const arg)
+    void call_process_events_forever(void *const arg)
     {
-        auto const context = static_cast<kinect::Context *>(arg);
-
-        struct timeval timeout;
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-
-        while (context->running_)
-        {
-            freenect_process_events_timeout(context->context_, &timeout);
-        }
+        static_cast<kinect::Context *>(arg)->process_events_forever();
     }
 
     // = Depth =============================================================
