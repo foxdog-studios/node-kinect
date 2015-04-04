@@ -1,4 +1,3 @@
-#include <iostream>
 #include <sys/time.h>
 
 #include <node.h>
@@ -45,6 +44,7 @@ namespace kinect
     }
 
     Context::Context() : ObjectWrap(), running_(false), context_(nullptr),
+            async_handles(async_depth_callback, async_video_callback),
             device_(nullptr)
     {
         // Empty
@@ -120,15 +120,14 @@ namespace kinect
         assert(depth_mode_.is_valid);
 
         // LibUV stuff
-        if (uv_mutex_init(&lock_) != 0)
+        if (!async_handles.enable())
         {
-            throw_message("Could not initialize lock");
+            throw_message("Could not enable async handles");
             return;
         }
 
-        uv_loop_t *const loop = uv_default_loop();
-        uv_async_init(loop, &uv_async_video_callback_, async_video_callback);
-        uv_async_init(loop, &uv_async_depth_callback_, async_depth_callback);
+        async_handles.set_depth_data(this);
+        async_handles.set_video_data(this);
     }
 
     Handle<Value> Context::CallDisable(Arguments const &args)
@@ -142,7 +141,6 @@ namespace kinect
     {
         std::string error_message;
 
-        uv_mutex_destroy(&lock_);
 
         if (device_ != nullptr)
         {
@@ -171,8 +169,7 @@ namespace kinect
             throw_message(error_message.c_str());
         }
 
-        uv_close((uv_handle_t *) (&uv_async_depth_callback_), nullptr);
-        uv_close((uv_handle_t *) (&uv_async_video_callback_), nullptr);
+        async_handles.disable();
     }
 
 
@@ -189,17 +186,14 @@ namespace kinect
 
     void Context::StartProcessingEvents()
     {
-        uv_mutex_lock(&lock_);
         if (running_)
         {
             throw_message("Already processing events");
+            return;
         }
-        else
-        {
-            running_ = true;
-            uv_thread_create(&event_thread_, call_process_events_forever, this);
-        }
-        uv_mutex_unlock(&lock_);
+
+        running_ = true;
+        uv_thread_create(&event_thread_, call_process_events_forever, this);
     }
 
     Handle<Value> Context::CallStopProcessingEvents(Arguments const &args)
@@ -211,17 +205,13 @@ namespace kinect
 
     void Context::StopProcessingEvents()
     {
-        uv_mutex_lock(&lock_);
-
         if (!running_)
         {
             throw_message("Already stopped processing events");
-            uv_mutex_unlock(&lock_);
             return;
         }
 
         running_ = false;
-        uv_mutex_unlock(&lock_);
         uv_thread_join(&event_thread_);
     }
 
@@ -231,15 +221,8 @@ namespace kinect
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
 
-        for (;;)
+        while (running_)
         {
-            uv_mutex_lock(&lock_);
-            bool running = running_;
-            uv_mutex_unlock(&lock_);
-
-            if (!running)
-                break;
-
             freenect_process_events_timeout(context_, &timeout);
         }
     }
@@ -581,15 +564,12 @@ namespace
 
     void depth_callback(freenect_device *dev, void *depth, uint32_t timestamp)
     {
-        auto const context = get_kinect_context(dev);
-        context->uv_async_depth_callback_.data = (void *) context;
-        uv_async_send(&context->uv_async_depth_callback_);
+        get_kinect_context(dev)->async_handles.send_depth();
     }
 
     void async_depth_callback(uv_async_t *handle, int notUsed)
     {
-        auto const context = get_kinect_context(handle);
-        context->DepthCallback();
+        get_kinect_context(handle)->DepthCallback();
     }
 
 
@@ -597,15 +577,12 @@ namespace
 
     void video_callback(freenect_device *dev, void *video, uint32_t timestamp)
     {
-        auto const context = get_kinect_context(dev);
-        context->uv_async_video_callback_.data = (void *) context;
-        uv_async_send(&context->uv_async_video_callback_);
+        get_kinect_context(dev)->async_handles.send_video();
     }
 
     void async_video_callback(uv_async_t *handle, int notUsed)
     {
-        auto const context = get_kinect_context(handle);
-        context->VideoCallback();
+        get_kinect_context(handle)->VideoCallback();
     }
 
 

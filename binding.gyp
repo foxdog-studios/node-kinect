@@ -1,7 +1,10 @@
 {
   'targets': [{
     'target_name': 'kinect',
-    'sources': ['src/kinect.cc'],
+    'sources': [
+      'src/async_handles.cc',
+      'src/kinect.cc'
+    ],
     'include_dirs': [
       '/usr/include/libfreenect',
       '/usr/include/libusb-1.0'

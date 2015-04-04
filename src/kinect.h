@@ -4,6 +4,9 @@
 #include <string>
 #include <node.h>
 
+#include "async_handles.h"
+
+
 namespace kinect {
 
   class Context : node::ObjectWrap {
@@ -14,8 +17,7 @@ namespace kinect {
       void                   VideoCallback    ();
       bool                   running_;
       freenect_context*      context_;
-      uv_async_t             uv_async_video_callback_;
-      uv_async_t             uv_async_depth_callback_;
+      AsyncHandles async_handles;
 
       void process_events_forever();
 
@@ -109,7 +111,6 @@ namespace kinect {
       freenect_frame_mode   depth_mode_;
 
       uv_thread_t event_thread_;
-      uv_mutex_t lock_;
   };
 
 }
