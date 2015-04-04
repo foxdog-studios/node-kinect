@@ -4,7 +4,7 @@
     'sources': [
       'src/async_handle.cc',
       'src/async_handles.cc',
-      'src/kinect.cc'
+      'src/context.cc'
     ],
     'include_dirs': [
       '/usr/include/libfreenect',

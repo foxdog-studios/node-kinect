@@ -5,7 +5,7 @@
 
 #include <libfreenect.hpp>
 
-#include "kinect.h"
+#include "context.h"
 
 
 using namespace node;
