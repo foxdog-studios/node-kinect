@@ -116,9 +116,9 @@ namespace kinect
         assert(video_mode_.is_valid);
 
         // Initialize depth mode
-        depthMode_ = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM,
+        depth_mode_ = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM,
                 FREENECT_DEPTH_11BIT);
-        assert(depthMode_.is_valid);
+        assert(depth_mode_.is_valid);
 
         // LibUV stuff
         uv_loop_t *const loop = uv_default_loop();
@@ -327,13 +327,13 @@ namespace kinect
     {
         freenect_set_depth_callback(device_, depth_callback);
 
-        if (freenect_set_depth_mode(device_, depthMode_) != 0)
+        if (freenect_set_depth_mode(device_, depth_mode_) != 0)
         {
             throw_message("Could not set depth mode");
             return;
         }
 
-        depthBuffer_ = Buffer::New(depthMode_.bytes);
+        depthBuffer_ = Buffer::New(depth_mode_.bytes);
         depth_buffer_handle_ = Persistent<Value>::New(depthBuffer_->handle_);
 
         if (freenect_set_depth_buffer(device_, Buffer::Data(depthBuffer_)) != 0)

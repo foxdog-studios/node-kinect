@@ -97,14 +97,14 @@ namespace kinect {
       v8::Persistent<v8::Function> depth_callback_;
       v8::Persistent<v8::Function> video_callback_;
 
-      node::Buffer*         video_buffer_;
+      node::Buffer *video_buffer_;
       v8::Persistent<v8::Value> video_buffer_handle_;
-      node::Buffer*         depthBuffer_;
+      node::Buffer *depthBuffer_;
       v8::Persistent<v8::Value> depth_buffer_handle_;
 
       freenect_device*      device_;
       freenect_frame_mode   video_mode_;
-      freenect_frame_mode   depthMode_;
+      freenect_frame_mode   depth_mode_;
 
       uv_thread_t           event_thread_;
 
