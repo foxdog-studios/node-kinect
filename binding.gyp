@@ -2,6 +2,7 @@
   'targets': [{
     'target_name': 'kinect',
     'sources': [
+      'src/async_handle.cc',
       'src/async_handles.cc',
       'src/kinect.cc'
     ],
@@ -11,7 +12,7 @@
     ],
     'libraries': ['-lfreenect'],
     'cflags_cc': ['-std=c++11'],
-    'cflags_cc!': [ '-fno-exceptions' ],
+    'cflags_cc!': ['-fno-exceptions'],
   }]
 }
 
