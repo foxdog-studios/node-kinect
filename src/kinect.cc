@@ -121,6 +121,12 @@ namespace kinect
         assert(depth_mode_.is_valid);
 
         // LibUV stuff
+        if (uv_mutex_init(&lock_) != 0)
+        {
+            throw_message("Could not initialize lock");
+            return;
+        }
+
         uv_loop_t *const loop = uv_default_loop();
         uv_async_init(loop, &uv_async_video_callback_, async_video_callback);
         uv_async_init(loop, &uv_async_depth_callback_, async_depth_callback);
@@ -137,9 +143,10 @@ namespace kinect
     {
         std::string error_message;
 
+        uv_mutex_destroy(&lock_);
+
         if (device_ != nullptr)
         {
-
             if (freenect_close_device(device_) != 0)
             {
                 error_message += "Could not close device";
@@ -180,11 +187,17 @@ namespace kinect
 
     void Context::StartProcessingEvents()
     {
-        if (!running_)
+        uv_mutex_lock(&lock_);
+        if (running_)
+        {
+            throw_message("Context is already running");
+        }
+        else
         {
             running_ = true;
             uv_thread_create(&event_thread_, process_events_forever, this);
         }
+        uv_mutex_unlock(&lock_);
     }
 
     Handle<Value> Context::CallStopProcessingEvents(Arguments const &args)

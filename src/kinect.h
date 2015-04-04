@@ -106,8 +106,8 @@ namespace kinect {
       freenect_frame_mode   video_mode_;
       freenect_frame_mode   depth_mode_;
 
-      uv_thread_t           event_thread_;
-
+      uv_thread_t event_thread_;
+      uv_mutex_t lock_;
   };
 
 }
