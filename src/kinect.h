@@ -98,7 +98,7 @@ namespace kinect {
       v8::Persistent<v8::Function> video_callback_;
 
       node::Buffer*         videoBuffer_;
-      v8::Persistent<v8::Value> videoBufferPersistentHandle_;
+      v8::Persistent<v8::Value> video_buffer_handle_;
       node::Buffer*         depthBuffer_;
       v8::Persistent<v8::Value> depth_buffer_handle_;
 

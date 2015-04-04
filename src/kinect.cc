@@ -228,9 +228,7 @@ namespace kinect
         }
 
         videoBuffer_ = Buffer::New(videoMode_.bytes);
-
-        videoBufferPersistentHandle_ =
-            Persistent<Value>::New(videoBuffer_->handle_);
+        video_buffer_handle_ = Persistent<Value>::New(videoBuffer_->handle_);
 
         if (freenect_set_video_buffer(device_, Buffer::Data(videoBuffer_)) != 0)
         {
@@ -259,8 +257,8 @@ namespace kinect
     {
         freenect_stop_video(device_);
         freenect_set_video_buffer(device_, nullptr);
-        videoBufferPersistentHandle_.Dispose();
-        videoBufferPersistentHandle_.Clear();
+        video_buffer_handle_.Dispose();
+        video_buffer_handle_.Clear();
         videoBuffer_ = nullptr;
         freenect_set_video_callback(device_, nullptr);
     }
@@ -335,8 +333,7 @@ namespace kinect
         }
 
         depthBuffer_ = Buffer::New(depthMode_.bytes);
-        depth_buffer_handle_ =
-                Persistent<Value>::New(depthBuffer_->handle_);
+        depth_buffer_handle_ = Persistent<Value>::New(depthBuffer_->handle_);
 
         if (freenect_set_depth_buffer(device_, Buffer::Data(depthBuffer_)) != 0)
         {

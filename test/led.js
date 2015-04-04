@@ -16,7 +16,7 @@ describe("LED", function() {
   var option_tests = [
     {name: 'green'                , option: Kinect.LED_GREEN           },
     {name: 'red'                  , option: Kinect.LED_RED             },
-    {name: 'yello'                , option: Kinect.LED_YELLOW          },
+    {name: 'yellow'               , option: Kinect.LED_YELLOW          },
     {name: 'blink green'          , option: Kinect.LED_BLINK_GREEN     },
     {name: 'blink red then yellow', option: Kinect.LED_BLINK_RED_YELLOW},
     {name: 'off'                  , option: Kinect.LED_OFF             }
