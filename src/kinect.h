@@ -103,7 +103,7 @@ namespace kinect {
       v8::Persistent<v8::Value> depth_buffer_handle_;
 
       freenect_device*      device_;
-      freenect_frame_mode   videoMode_;
+      freenect_frame_mode   video_mode_;
       freenect_frame_mode   depthMode_;
 
       uv_thread_t           event_thread_;

@@ -111,9 +111,9 @@ namespace kinect
         freenect_set_user(device_, this);
 
         // Initialize video mode
-        videoMode_ = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM,
+        video_mode_ = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM,
                 FREENECT_VIDEO_RGB);
-        assert(videoMode_.is_valid);
+        assert(video_mode_.is_valid);
 
         // Initialize depth mode
         depthMode_ = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM,
@@ -221,13 +221,13 @@ namespace kinect
     {
         freenect_set_video_callback(device_, video_callback);
 
-        if (freenect_set_video_mode(device_, videoMode_) != 0)
+        if (freenect_set_video_mode(device_, video_mode_) != 0)
         {
             throw_message("Could not set video mode");
             return;
         }
 
-        videoBuffer_ = Buffer::New(videoMode_.bytes);
+        videoBuffer_ = Buffer::New(video_mode_.bytes);
         video_buffer_handle_ = Persistent<Value>::New(videoBuffer_->handle_);
 
         if (freenect_set_video_buffer(device_, Buffer::Data(videoBuffer_)) != 0)
