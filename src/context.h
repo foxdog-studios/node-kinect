@@ -5,6 +5,7 @@
 #include <node.h>
 
 #include "async_handles.h"
+#include "world_frame.h"
 
 
 namespace kinect {
@@ -42,6 +43,14 @@ namespace kinect {
 
       static v8::Handle<v8::Value> CallStopProcessingEvents(
               v8::Arguments const &args);
+
+
+      // = World ===============================================================
+
+      static v8::Handle<v8::Value> call_set_world_callback(
+              v8::Arguments const &args);
+
+        void update_world();
 
 
       // = Depth ===============================================================
@@ -111,6 +120,7 @@ namespace kinect {
       freenect_frame_mode   depth_mode_;
 
       uv_thread_t event_thread_;
+      WorldFrame world_;
   };
 
 }

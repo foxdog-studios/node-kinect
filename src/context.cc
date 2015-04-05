@@ -6,6 +6,7 @@
 #include <libfreenect.hpp>
 
 #include "context.h"
+#include "util.h"
 
 
 using namespace node;
@@ -27,8 +28,6 @@ namespace
 
     kinect::Context *get_kinect_context(uv_async_t *);
     kinect::Context *get_kinect_context(freenect_device *);
-
-    void throw_message(char const *);
 }
 
 
@@ -77,7 +76,7 @@ namespace kinect
         {
             if (!args[0]->IsInt32())
             {
-                throw_message("userDeviceNumber must be an integer");
+                throw_error("userDeviceNumber must be an integer");
                 return;
             }
 
@@ -85,13 +84,13 @@ namespace kinect
         }
         else
         {
-            throw_message("Excepted 1 argument");
+            throw_error("Excepted 1 argument");
             return;
         }
 
         if (freenect_init(&context_, nullptr /* usb_ctx */) < 0)
         {
-            throw_message("Error initializing freenect context");
+            throw_error("Error initializing freenect context");
             return;
         }
 
@@ -103,7 +102,7 @@ namespace kinect
 
         if (freenect_open_device(context_, &device_, user_device_number) < 0)
         {
-            throw_message("Could not open device number");
+            throw_error("Could not open device number");
             return;
         }
 
@@ -122,7 +121,7 @@ namespace kinect
         // LibUV stuff
         if (!async_handles.enable())
         {
-            throw_message("Could not enable async handles");
+            throw_error("Could not enable async handles");
             return;
         }
 
@@ -166,7 +165,7 @@ namespace kinect
 
         if (error_message.length() > 0)
         {
-            throw_message(error_message.c_str());
+            throw_error(error_message.c_str());
         }
 
         async_handles.disable();
@@ -188,7 +187,7 @@ namespace kinect
     {
         if (running_)
         {
-            throw_message("Already processing events");
+            throw_error("Already processing events");
             return;
         }
 
@@ -207,7 +206,7 @@ namespace kinect
     {
         if (!running_)
         {
-            throw_message("Already stopped processing events");
+            throw_error("Already stopped processing events");
             return;
         }
 
@@ -229,6 +228,26 @@ namespace kinect
 
 
     // =====================================================================
+    // = World frame                                                       =
+    // =====================================================================
+
+    Handle<Value> Context::call_set_world_callback(Arguments const &args)
+    {
+        HandleScope scope;
+        GetContext(args)->world_.set_callback(args);
+        return scope.Close(Undefined());
+    }
+
+    void Context::update_world()
+    {
+        if (depthBuffer_ != nullptr && video_buffer_ != nullptr)
+        {
+            world_.update((uint8_t *) Buffer::Data(depthBuffer_),
+                          (uint8_t *) Buffer::Data(video_buffer_));
+        }
+    }
+
+    // =====================================================================
     // = Video                                                             =
     // =====================================================================
 
@@ -247,7 +266,7 @@ namespace kinect
 
         if (freenect_set_video_mode(device_, video_mode_) != 0)
         {
-            throw_message("Could not set video mode");
+            throw_error("Could not set video mode");
             return;
         }
 
@@ -257,13 +276,13 @@ namespace kinect
         if (freenect_set_video_buffer(device_, Buffer::Data(video_buffer_))
                 != 0)
         {
-            throw_message("Could not set video buffer");
+            throw_error("Could not set video buffer");
             return;
         }
 
         if (freenect_start_video(device_) != 0)
         {
-            throw_message("Could not start video");
+            throw_error("Could not start video");
             return;
         }
     }
@@ -302,7 +321,7 @@ namespace kinect
     {
         if (args.Length() != 1 || !args[0]->IsFunction())
         {
-            throw_message("Expected 1 function as arguments");
+            throw_error("Expected 1 function as arguments");
             return;
         }
 
@@ -331,6 +350,7 @@ namespace kinect
             Handle<Value> argv[1] = { video_buffer_->handle_ };
             video_callback_->Call(handle_, argc, argv);
         }
+        update_world();
     }
 
 
@@ -353,7 +373,7 @@ namespace kinect
 
         if (freenect_set_depth_mode(device_, depth_mode_) != 0)
         {
-            throw_message("Could not set depth mode");
+            throw_error("Could not set depth mode");
             return;
         }
 
@@ -362,13 +382,13 @@ namespace kinect
 
         if (freenect_set_depth_buffer(device_, Buffer::Data(depthBuffer_)) != 0)
         {
-            throw_message("Could not set depth buffer");
+            throw_error("Could not set depth buffer");
             return;
         }
 
         if (freenect_start_depth(device_) != 0)
         {
-            throw_message("Could not start depth");
+            throw_error("Could not start depth");
             return;
         }
     }
@@ -407,7 +427,7 @@ namespace kinect
     {
         if (args.Length() != 1 || !args[0]->IsFunction())
         {
-            throw_message("Expected 1 functions as arguments");
+            throw_error("Expected 1 functions as arguments");
             return;
         }
 
@@ -436,6 +456,7 @@ namespace kinect
             Handle<Value> argv[1] = { depthBuffer_->handle_ };
             depth_callback_->Call(handle_, argc, argv);
         }
+        update_world();
     }
 
 
@@ -454,7 +475,7 @@ namespace kinect
     {
         if (args.Length() != 1 || !args[0]->IsInt32())
         {
-            throw_message("Expected 1 number");
+            throw_error("Expected 1 number");
             return;
         }
 
@@ -463,7 +484,7 @@ namespace kinect
 
         if (freenect_set_led(device_, option) != 0)
         {
-            throw_message("Could not set LED option");
+            throw_error("Could not set LED option");
         }
     }
 
@@ -484,13 +505,13 @@ namespace kinect
     {
         if (args.Length() != 1 || !args[0]->IsInt32())
         {
-            throw_message("Expected 1 integer");
+            throw_error("Expected 1 integer");
             return;
         }
 
         if (freenect_set_tilt_degs(device_, args[0]->ToInt32()->Value()) != 0)
         {
-            throw_message("Could not set tilt angle");
+            throw_error("Could not set tilt angle");
         }
     }
 
@@ -530,6 +551,9 @@ namespace kinect
                 CallStartProcessingEvents);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopProcessingEvents",
                 CallStopProcessingEvents);
+
+        NODE_SET_PROTOTYPE_METHOD(tpl, "setWorldCallback",
+                call_set_world_callback);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "startDepth", StartDepth);
         NODE_SET_PROTOTYPE_METHOD(tpl, "stopDepth", StopDepth);
@@ -601,11 +625,6 @@ namespace
                 freenect_get_user(device));
         assert(context != nullptr);
         return context;
-    }
-
-    void throw_message(char const *const message)
-    {
-        ThrowException(Exception::Error(String::New(message)));
     }
 }
 
