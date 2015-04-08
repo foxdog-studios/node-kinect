@@ -92,7 +92,7 @@ namespace kinect
     {
         uint8_t *data = (uint8_t *) Buffer::Data(buffer_);
 
-        memset(data, 0, SIZE);
+        memset(data, 255, SIZE);
 
         Vector3d world_point;
         Vector2i video_point;
@@ -109,8 +109,10 @@ namespace kinect
                 uint16_t const l = static_cast<uint16_t>(depth[di]);
                 uint16_t const u = static_cast<uint16_t>(depth[di + 1]) << 8;
                 double const d = raw_depth_to_meters(u | l);
+                size_t const i = 4 * pi;
 
                 if (d < DEPTH_MIN || d > DEPTH_MAX)
+                    data[i + 3] = 0;
                     continue;
 
                 // World
@@ -118,12 +120,10 @@ namespace kinect
                 world_to_video(world_point, video_point);
 
                 // Video
-                size_t const i = 4 * pi;
                 size_t const v = 3 * (WIDTH * video_point(1) + video_point(0));
                 data[i] = video[v];
                 data[i + 1] = video[v + 1];
                 data[i + 2] = video[v + 2];
-                data[i + 3] = 255;
             }
         }
 
